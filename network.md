@@ -17,9 +17,10 @@ This document details the network design for the homelab.
 | ----------- | ------------- | ---------------------------- |
 | Gateway     | 192.168.0.1   | Primary Gateway              |
 | TrueNAS     | 192.168.0.10  | TrueNAS Scale Server         |
-| Media Share | 192.168.0.11  | TrueNAS Media Share          |
-| KyeNAS      | 192.168.0.200 | Old Synology NAS, deprecated |
+| Media Share | 192.168.1.10  | TrueNAS Media Share          |
+| KyeNAS      | 192.168.1.200 | Old Synology NAS, deprecated |
 | Gungnir     | 192.168.0.20  | Tims Main PC                 |
+| Printer     | 192.168.0.9   | Brother Printer              |
 
 ## Utilities
 
