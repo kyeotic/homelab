@@ -4,22 +4,22 @@ This document details the network design for the homelab.
 
 ## Networks
 
-| Name    | CIDR            | Usable IPs | Description                     |
-| ------- | --------------- | ---------- | ------------------------------- |
-| -       | **10.0.0.0/24** | 254        | Reserved for External Use       |
-| Default | **10.1.0.0/22** | 1007       | Default (10.1.0.1-10.1.3.254)   |
-| Media   | **10.2.0.0/24** | 249        | Media LAN (10.2.0.1-10.2.0.254) |
-| IOT     | **10.3.0.0/22** | 1007       | Media LAN (10.3.0.1-10.3.3.254) |
+| Name    | CIDR               | DHCP Start | Description            |
+| ------- | ------------------ | ---------- | ---------------------- |
+| Default | **192.168.0.0/22** | 30         | Default                |
+| Media   | **192.168.1.0/24** | 20         | Media LAN              |
+| IOT     | **192.168.2.0/24** | 20         | Internet-of-things LAN |
 
 
 ## Static Leases (Reserved IPs)
 
-| Name    | IP         | Description                        |
-| ------- | ---------- | ---------------------------------- |
-| Gateway | 10.1.0.1   | Primary Gateway (lol, 10101)       |
-| TrueNAS | 10.1.0.10  | TrueNAS Scale Server (lol, 101010) |
-| KyeNAS  | 10.2.0.20  | Old Synology NAS, deprecated       |
-| Gungnir | 10.1.0.101 | Tims Main PC (lol, 1010101)        |
+| Name        | IP            | Description                  |
+| ----------- | ------------- | ---------------------------- |
+| Gateway     | 192.168.0.1   | Primary Gateway              |
+| TrueNAS     | 192.168.0.10  | TrueNAS Scale Server         |
+| Media Share | 192.168.0.11  | TrueNAS Media Share          |
+| KyeNAS      | 192.168.0.200 | Old Synology NAS, deprecated |
+| Gungnir     | 192.168.0.20  | Tims Main PC                 |
 
 ## Utilities
 
