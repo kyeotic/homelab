@@ -19,6 +19,7 @@ This document details the network design for the homelab.
 | TrueNAS     | 192.168.0.10  | TrueNAS Scale Server         |
 | Traefik     | 192.168.0.11  | TrueNAS Traefik Proxy        |
 | HOAS        | 192.168.0.15  | Home Assistant OS            |
+| PiHole      | 192.168.0.16  | Pi Hole DNS Blocker          |
 | Media Share | 192.168.1.10  | TrueNAS Media Share          |
 | KyeNAS      | 192.168.1.200 | Old Synology NAS, deprecated |
 | Gungnir     | 192.168.0.20  | Tims Main PC                 |

@@ -21,7 +21,24 @@ To do this we assign an alias for both to the primary network interface, then go
 
 Then go to ** Apps > Settings > Advanced Settings** and bind the Node IP to `x.11`.
 
-I also setup AWS Route 52 DNS for `nas.kye.dev` `local.kye.dev` and `*.local.kye.dev` routing to the respective IPs
+I also setup AWS Route 53 DNS for `nas.kye.dev` `local.kye.dev` and `*.local.kye.dev` routing to the respective IPs
+
+### DDNS
+
+Dynamic DNS is provided by [CrazymaxDDNS](https://crazymax.dev/ddns-route53/install/docker/) running in Docker in TrueNAS. There is [a problem](https://www.truenas.com/community/threads/docker-unable-to-provide-environment-variables-einval.108324/) providing configuration as ENV VARS so it is being provided as a yaml file for now. This should be changed when possible.
+
+The creds come from a **ddns** user in AWS with a restrictive IAM policy.
+
+### Zerotier
+
+Using the TrueCharts ZeroTier app, with the Kyeotek network.
+
+You also need to enable **System Settings > Advanced > Sysctll** and set
+
+| Var                                | Value | Enabled |
+| ---------------------------------- | ----- | ------- |
+| `net.ipv4.ip_forward`              | `1`   | `true`  |
+| `net.ipv4.conf.all.src_valid_mark` | `1`   | `true`  |
 
 ## Traefik 
 
