@@ -13,17 +13,19 @@ This document details the network design for the homelab.
 
 ## Static Leases (Reserved IPs)
 
-| Name        | IP            | Description                  |
-| ----------- | ------------- | ---------------------------- |
-| Gateway     | 192.168.0.1   | Primary Gateway              |
-| TrueNAS     | 192.168.0.10  | TrueNAS Scale Server         |
-| Traefik     | 192.168.0.11  | TrueNAS Traefik Proxy        |
-| HOAS        | 192.168.0.15  | Home Assistant OS            |
-| PiHole      | 192.168.0.16  | Pi Hole DNS Blocker          |
-| Media Share | 192.168.1.10  | TrueNAS Media Share          |
-| KyeNAS      | 192.168.1.200 | Old Synology NAS, deprecated |
-| Gungnir     | 192.168.0.20  | Tims Main PC                 |
-| Printer     | 192.168.0.9   | Brother Printer              |
+| Name        | IP            | Description                   |
+| ----------- | ------------- | ----------------------------- |
+| Gateway     | 192.168.0.1   | Primary Gateway               |
+| iDRAC       | 192.168.0.7   | Dell R730 wireless management |
+| Printer     | 192.168.0.9   | Brother Printer               |
+| TrueNAS     | 192.168.0.10  | TrueNAS Scale Server          |
+| Traefik     | 192.168.0.11  | TrueNAS Traefik Proxy         |
+| HOAS        | 192.168.0.15  | Home Assistant OS             |
+| PiHole      | 192.168.0.16  | Pi Hole DNS Blocker           |
+| Media Share | 192.168.1.10  | TrueNAS Media Share           |
+| KyeNAS      | 192.168.1.200 | Old Synology NAS, deprecated  |
+| Gungnir     | 192.168.0.20  | Tims Main PC                  |
+
 
 ## Utilities
 

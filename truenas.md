@@ -31,14 +31,16 @@ The creds come from a **ddns** user in AWS with a restrictive IAM policy.
 
 ### Zerotier
 
-Using the TrueCharts ZeroTier app, with the Kyeotek network.
+Using the TrueCharts ZeroTier app, with the Kyeotek network: `b15644912e20851f`.
 
-You also need to enable **System Settings > Advanced > Sysctll** and set
+You also need to enable **System Settings > Advanced > Sysctll** and set.
 
 | Var                                | Value | Enabled |
 | ---------------------------------- | ----- | ------- |
 | `net.ipv4.ip_forward`              | `1`   | `true`  |
 | `net.ipv4.conf.all.src_valid_mark` | `1`   | `true`  |
+
+See [this forum](https://www.truenas.com/community/threads/unable-to-use-zerotier-with-scale.105268/) post for more details.
 
 ## Traefik 
 
