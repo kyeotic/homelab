@@ -1,18 +1,10 @@
 locals {
-  dns = [
-    {
-      name    = "nas"
-      records = ["192.168.0.10"]
-    },
-    {
-      name    = "local"
-      records = ["192.168.0.11"]
-    },
-    {
-      name    = "*.local"
-      records = ["192.168.0.11"]
-    }
-  ]
+  dns = {
+    "*.local" = ["192.168.0.11"],
+    "nas"     = ["192.168.0.10"],
+    "local"   = ["192.168.0.11"],
+    "hoas"    = ["192.168.0.15"]
+  }
 }
 
 data "aws_route53_zone" "kye_dev" {
@@ -20,10 +12,10 @@ data "aws_route53_zone" "kye_dev" {
 }
 
 resource "aws_route53_record" "dns" {
-  for_each = { for k, v in local.dns : k => v }
+  for_each = local.dns
   zone_id  = data.aws_route53_zone.kye_dev.zone_id
-  name     = "${each.value.name}.kye.dev"
+  name     = "${each.key}.kye.dev"
   type     = "A"
   ttl      = 300
-  records  = each.value.records
+  records  = each.value
 }
