@@ -1,0 +1,24 @@
+#!/bin/bash
+set -ex
+
+APP_NAME="ddns-updater"
+DOCKER_REGISTRY_HOST="docker.local.kye.dev"
+
+_scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_project="${_scripts}/.."
+_ddns="${_project}/ddns"
+
+# export $(grep -v '^#' $_project/.env | xargs)
+
+# echo $_scripts
+# echo $_project
+
+pushd $_ddns
+
+# use podman
+podman build -f ./Dockerfile . -t $DOCKER_REGISTRY_HOST/$APP_NAME:latest
+# podman image tag snow-tracker $DOCKER_REGISTRY_HOST/$APP_NAME
+podman push $DOCKER_REGISTRY_HOST/$APP_NAME:latest
+
+popd
+
