@@ -25,9 +25,9 @@ I also setup AWS Route 53 DNS for `nas.kye.dev` `local.kye.dev` and `*.local.kye
 
 ### DDNS
 
-Dynamic DNS is provided by [CrazymaxDDNS](https://crazymax.dev/ddns-route53/install/docker/) running in Docker in TrueNAS. There is [a problem](https://www.truenas.com/community/threads/docker-unable-to-provide-environment-variables-einval.108324/) providing configuration as ENV VARS so it is being provided as a yaml file for now. This should be changed when possible.
+Dynamic DNS is provided by [CrazymaxDDNS](https://crazymax.dev/ddns-route53/install/docker/) running in Docker in TrueNAS. There is [a problem](https://www.truenas.com/community/threads/docker-unable-to-provide-environment-variables-einval.108324/) providing configuration as ENV VARS so it is being provided as a yaml file for now. This should be changed when possible. This is currently being handled by wrapping the image with a custom one in `ddns/Dockerfile` in order to set the `SCHEDULE` variable. It is deployed to the docker registry in TrueNAS.
 
-The creds come from a **ddns** user in AWS with a restrictive IAM policy.
+The creds come from a **ddns** user in AWS with a restrictive IAM policy. This policy is defined in `infra/ddns-role`.
 
 ### Zerotier
 
