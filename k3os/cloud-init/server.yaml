@@ -1,0 +1,40 @@
+#cloud-config
+# ref: https://github.com/rancher/k3os/blob/master/README.md#configuration-reference
+hostname: k3n00
+ssh_authorized_keys:
+- github:kyeotic
+write_files:
+- path: /var/lib/connman/default.config
+  # IPv4=<node_ip>/<subnet_mask>/<gateway_ip>
+  content: |-
+    [service_eth0]
+    Type=ethernet
+    IPv4=192.168.0.12/255.255.255.0/192.168.0.1
+    IPv6=off
+    Nameservers=8.8.8.8
+
+    TimeServers=0.pool.ntp.org,1.pool.ntp.org
+
+    # SearchDomains=local
+    # Domain=local
+- encoding: ""
+  content: |-
+    #!/bin/bash
+    systemctl stop firewalld
+    systemctl disable firewalld
+  owner: root
+  path: /etc/local.d/example.start
+  permissions: '0755'
+k3os:
+  enabled: true
+  password: "$$PASSWORD"
+  # environment:
+  #   http_proxy: http://myserver
+  #   https_proxy: http://myserver
+  dns_nameservers:
+  - 8.8.8.8
+  - 1.1.1.1
+  k3s_args:
+  - server
+  - "--cluster-init"
+  - "--disable=traefik"

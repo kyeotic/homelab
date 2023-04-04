@@ -20,6 +20,9 @@ This document details the network design for the homelab.
 | Printer     | 192.168.0.9   | Brother Printer               |
 | TrueNAS     | 192.168.0.10  | TrueNAS Scale Server          |
 | Traefik     | 192.168.0.11  | TrueNAS Traefik Proxy         |
+| k3n00       | 192.168.0.12  | K3OS Server                   |
+| k3n01       | 192.168.0.13  | K3OS Node 01                  |
+| k3n02       | 192.168.0.14  | K3OS Node 02                  |
 | HOAS        | 192.168.0.15  | Home Assistant OS             |
 | PiHole      | 192.168.0.16  | Pi Hole DNS Blocker           |
 | Media Share | 192.168.1.10  | TrueNAS Media Share           |
