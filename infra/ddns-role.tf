@@ -1,7 +1,10 @@
+data "aws_iam_user" "homelab" {
+  user_name = "homelab"
+}
+
 resource "aws_iam_policy" "ddns-manager" {
   name        = "ddns-manager"
   description = "Manage Dynamic DNS deployments"
-  # ... other configuration ...
 
   policy = data.aws_iam_policy_document.ddns.json
 }
@@ -31,4 +34,7 @@ data "aws_iam_policy_document" "ddns" {
   }
 }
 
-
+resource "aws_iam_user_policy_attachment" "proxmox-attach" {
+  user       = data.aws_iam_user.homelab.user_name
+  policy_arn = aws_iam_policy.ddns-manager.arn
+}
