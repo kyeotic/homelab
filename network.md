@@ -17,7 +17,7 @@ This document details the network design for the homelab.
 | Printer | 192.168.0.9   | Brother Printer              |
 | Proxmox | 192.168.0.10  | Promox Server                |
 | TrueNAS | 192.168.0.11  | TrueNAS Server               |
-| TrueNAS | 192.168.0.12  | Proxmox NGINX                |
+| nginx   | 192.168.0.12  | Proxmox NGINX                |
 | HOAS    | 192.168.0.15  | Home Assistant OS            |
 | PiHole  | 192.168.0.16  | Pi Hole DNS Blocker          |
 | Kye-1   | 192.168.0.100 | Tims Main PC                 |

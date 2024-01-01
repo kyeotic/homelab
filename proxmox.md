@@ -4,11 +4,16 @@
 
 ## Installed Apps
 
-| Name           | Type | IP Address   |
-| -------------- | ---- | ------------ |
-| Home Assistant | LXC  |              |
-| PiHole         | LXC  | 192.168.0.16 |
+| Name           | Type | IP Address   | Alias                               |
+| -------------- | ---- | ------------ | ----------------------------------- |
+| Home Assistant | LXC  | 192.168.0.15 | hoas.local.kye.dev                  |
+| Nginx          | LXC  | 192.168.0.12 | nginx.local.kye.dev                 |
+| PiHole         | LXC  | 192.168.0.16 | http://192.168.0.16/admin/login.php |
 
+
+## PiHole
+
+To exlude a device go to **Clients** > **Add** (MAC Address),  then set **Group Assignment** to **none**
 
 ## Nginx
 
@@ -59,3 +64,7 @@ http:
 ```
 
 The Nginx proxy path must also have *Websocket Support* Enabled.
+
+## Fan Control
+
+Start [here](https://wiki.joeplaa.com/en/tutorials/how-to-install-and-configure-fancontrol-pc)
