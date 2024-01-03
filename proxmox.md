@@ -4,11 +4,13 @@
 
 ## Installed Apps
 
-| Name           | Type | IP Address   | Alias                               |
-| -------------- | ---- | ------------ | ----------------------------------- |
-| Home Assistant | LXC  | 192.168.0.15 | hoas.local.kye.dev                  |
-| Nginx          | LXC  | 192.168.0.12 | nginx.local.kye.dev                 |
-| PiHole         | LXC  | 192.168.0.16 | http://192.168.0.16/admin/login.php |
+| Name           | Type | IP Address   | Alias                                             |
+| -------------- | ---- | ------------ | ------------------------------------------------- |
+| Home Assistant | LXC  | 192.168.0.15 | [hoas&homeassistant].local.kye.dev                |
+| Nginx          | LXC  | 192.168.0.12 | nginx.local.kye.dev                               |
+| PiHole         | LXC  | 192.168.0.16 | http://192.168.0.16/admin/login.php               |
+| Mealie         | LXC  | 192.168.0.21 | food.local.kye.dev                                |
+| DDns           | LXC  | DHCP         | https://crazymax.dev/ddns-route53/install/docker/ |
 
 
 ## PiHole
@@ -65,6 +67,61 @@ http:
 
 The Nginx proxy path must also have *Websocket Support* Enabled.
 
+### Cockpit
+
+Requires special NGINX config
+
+```
+location / {
+      # Required to proxy the connection to Cockpit
+        proxy_pass https://192.168.0.13:9090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Required for web sockets to function
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Pass ETag header from Cockpit to clients.
+        # See: https://github.com/cockpit-project/cockpit/issues/5239
+        gzip off;
+
+        proxy_buffering off;
+        proxy_buffer_size 16k;
+        proxy_busy_buffers_size 24k;
+        proxy_buffers 64 4k;
+}
+```
+
+as well as custom config in cockpit `nano /etc/cockpit/cockpit.conf`
+
+```
+[WebService]
+Origins = https://cockpit.local.kye.dev wss://cockpit.local.kye.dev
+ProtocolHeader = X-Forwarded-Proto
+```
+
+## NAS / Cockpit
+
+Using [this guide](https://homelab.casaursus.net/a-light-weight-nas/#install-cockpit)
+
+or maybe
+
+Using [this guide](https://forum.proxmox.com/threads/tutorial-unprivileged-lxcs-mount-cifs-shares.101795/)
+
+Useful Links
+
+- https://www.youtube.com/watch?v=Hu3t8pcq8O0
+- https://bayton.org/docs/linux/lxd/mount-cifssmb-shares-rw-in-lxd-containers/
+- https://www.youtube.com/watch?v=UnXxJMjW4LE
+- https://jo-me.github.io/proxmox-idmap-helper/
+
 ## Fan Control
 
 Start [here](https://wiki.joeplaa.com/en/tutorials/how-to-install-and-configure-fancontrol-pc)
+
+## Docker & Docker Compose
+
+See [this guide](https://collabnix.com/how-to-install-the-latest-version-of-docker-compose-on-alpine-linuxin-2022/)
