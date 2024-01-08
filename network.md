@@ -11,22 +11,22 @@ This document details the network design for the homelab.
 
 ## Static Leases (Reserved IPs)
 
-| Name       | IP            | Description                  |
-| ---------- | ------------- | ---------------------------- |
-| Gateway    | 192.168.0.1   | Primary Gateway              |
-| Printer    | 192.168.0.9   | Brother Printer              |
-| Proxmox    | 192.168.0.10  | Promox Server                |
-| TrueNAS    | 192.168.0.11  | TrueNAS Server               |
-| nginx      | 192.168.0.12  | Proxmox NGINX                |
-| Cockpit    | 192.168.0.13  | Cockpit LXC                  |
-| HOAS       | 192.168.0.15  | Home Assistant OS            |
-| Technitium | 192.168.0.16  | Technitium DNS Blocker       |
-| PiHole     | 192.168.0.17  | Pi Hole DNS Blocker          |
-| VPN        | 192.168.0.18  | Tailscale Router             |
-| Mealie     | 192.168.0.21  | Mealie                       |
-| Kye-1      | 192.168.0.100 | Tims Main PC                 |
-| Kate       | 192.168.0.105 | Kate's iPhone                |
-| KyeNAS     | 192.168.0.200 | Old Synology NAS, deprecated |
+| Name      | IP            | Description                  |
+| --------- | ------------- | ---------------------------- |
+| Gateway   | 192.168.0.1   | Primary Gateway              |
+| Printer   | 192.168.0.9   | Brother Printer              |
+| Proxmox   | 192.168.0.10  | Promox Server                |
+| TrueNAS   | 192.168.0.11  | TrueNAS Server               |
+| nginx     | 192.168.0.12  | Proxmox NGINX                |
+| Plex      | 192.168.0.14  | Plex                         |
+| HOAS      | 192.168.0.15  | Home Assistant OS            |
+| PiHole    | 192.168.0.16  | Pi Hole DNS Blocker          |
+| VPN       | 192.168.0.18  | Tailscale Router             |
+| Portainer | 192.168.0.20  | Docker and Portainer         |
+| Mealie    | 192.168.0.21  | Mealie                       |
+| Kye-1     | 192.168.0.100 | Tims Main PC                 |
+| Kate      | 192.168.0.105 | Kate's iPhone                |
+| KyeNAS    | 192.168.0.200 | Old Synology NAS, deprecated |
 
 
 ## Utilities
@@ -45,4 +45,39 @@ Consider the following when designing
 
 ## VPN
 
+Install [with this](https://tailscale.com/kb/1130/lxc-unprivileged)
+
+Then on LXC
+
+```
+
+    Install Tailscale on Alpine Linux
+
+# apk add tailscale
+
+    Use OpenRC to enable and start the service
+
+rc-update add tailscale
+rc-service tailscale start
+
+    Authenticate and connect your machine to your Tailscale network
+
+tailscale up
+
+    You’re connected! You can find your Tailscale IPv4 address by running:
+
+tailscale ip -4
+
+```
+
+### Subnet Routing
 Remote access is handled with [TailScale's Subnet Router](https://tailscale.com/kb/1019/subnets?q=route&tab=linux#advertise-subnet-routes)
+
+
+```
+echo 'net.ipv4.ip_forward = 1' | tee -a /etc/sysctl.d/99-tailscale.conf
+echo 'net.ipv6.conf.all.forwarding = 1' | tee -a /etc/sysctl.d/99-tailscale.conf
+sysctl -p /etc/sysctl.d/99-tailscale.conf
+
+tailscale up --advertise-routes=192.168.0.0/24
+```

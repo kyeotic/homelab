@@ -8,10 +8,47 @@
 | -------------- | ---- | ------------ | ------------------------------------------------- |
 | Home Assistant | LXC  | 192.168.0.15 | [hoas&homeassistant].local.kye.dev                |
 | Nginx          | LXC  | 192.168.0.12 | nginx.local.kye.dev                               |
-| PiHole         | LXC  | 192.168.0.16 | http://192.168.0.16/admin/login.php               |
+| PiHole         | LXC  | 192.168.0.17 | http://192.168.0.17/admin/login.php               |
 | Mealie         | LXC  | 192.168.0.21 | food.local.kye.dev                                |
 | DDns           | LXC  | DHCP         | https://crazymax.dev/ddns-route53/install/docker/ |
 
+
+## Initial Setup
+
+Open a shell (answer yes to reboot prompts)
+
+```
+bash -c "$(wget -qLO - https://github.com/tteck/Proxmox/raw/main/misc/post-pve-install.sh)"
+```
+
+## Web UI Port/SSL
+
+SSL Certs
+
+* Go to **Datacenter** > ACME
+* Create an account
+* Add the Challenge Plugin
+* Go to **NODE** > System/Certificates
+* Add an ADME Cert
+
+To remove the port for the Proxmox Web UI follow [this guide](https://i12bretro.github.io/tutorials/0435.html).
+
+Log into ProxMox VE, either at the console or the web UI and launch the web shell
+
+Run the following commands
+```
+    # add the ip tables rule
+    /sbin/iptables -F
+    /sbin/iptables -t nat -F
+    /sbin/iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8006
+    # install iptables-persistent
+    apt install iptables-persistent -y
+    When prompted, select Yes to save current IPv4 rules > Press Enter
+    When prompted, select Yes to save current IPv6 rules > Press Enter
+    Open a web browser and navigate to https://DNSorIP to verify the 443 to 8006 redirect is working
+    Reboot the ProxMox host
+    Once the host has rebooted, test that the web UI is still reachable without specifying the port (:8006)
+```
 
 ## PiHole
 
@@ -33,26 +70,6 @@ This still didn't work, so I opened a LXC Console and ran
 python3 -m pip install --no-cache-dir certbot-dns-route53
 ```
 
-To remove the port for the Proxmox Web UI follow [this guide](https://i12bretro.github.io/tutorials/0435.html).
-
-
-```
-    Log into ProxMox VE, either at the console or the web UI and launch the web shell
-    Run the following commands
-    # add the ip tables rule
-    /sbin/iptables -F
-    /sbin/iptables -t nat -F
-    /sbin/iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8006
-    # install iptables-persistent
-    apt install iptables-persistent -y
-    When prompted, select Yes to save current IPv4 rules > Press Enter
-    When prompted, select Yes to save current IPv6 rules > Press Enter
-    Open a web browser and navigate to https://DNSorIP to verify the 443 to 8006 redirect is working
-    Reboot the ProxMox host
-    Once the host has rebooted, test that the web UI is still reachable without specifying the port (:8006)
-
-```
-
 ### Home Assistant
 
 To get home assistant working the `/var/lib/docker/volumes/hass_config/_data/configurations.yaml` needs this. (Easily edit with ssh by [enabling it](https://github.com/tteck/Proxmox/discussions/385#discussioncomment-3283416))
@@ -67,43 +84,70 @@ http:
 
 The Nginx proxy path must also have *Websocket Support* Enabled.
 
-### Cockpit
+## NAS
 
-Requires special NGINX config
+Install TrueNAS on VM
 
-```
-location / {
-      # Required to proxy the connection to Cockpit
-        proxy_pass https://192.168.0.13:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
+### Passthrough
 
-        # Required for web sockets to function
-        proxy_http_version 1.1;
-        proxy_buffering off;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+PassThrough Devices ([Guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM)) and [video](https://www.youtube.com/watch?v=MkK-9_-2oko))
 
-        # Pass ETag header from Cockpit to clients.
-        # See: https://github.com/cockpit-project/cockpit/issues/5239
-        gzip off;
-
-        proxy_buffering off;
-        proxy_buffer_size 16k;
-        proxy_busy_buffers_size 24k;
-        proxy_buffers 64 4k;
-}
-```
-
-as well as custom config in cockpit `nano /etc/cockpit/cockpit.conf`
+| Name     | Serial          | Serial ID                                   |
+| -------- | --------------- | ------------------------------------------- |
+| /dev/sda | S6PNNS0W105328K | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K |
+| /dev/sdb | S6PNNS0W105332H | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H |
+| /dev/sdc | S6PNNS0W105404L | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L |
 
 ```
-[WebService]
-Origins = https://cockpit.local.kye.dev wss://cockpit.local.kye.dev
-ProtocolHeader = X-Forwarded-Proto
+scsi1: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K,size=1953514584K,serial=S6PNNS0W105328K
+scsi2: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H,size=1953514584K,serial=S6PNNS0W105332H
+scsi3: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L,size=1953514584K,serial=S6PNNS0W105404L
 ```
 
-## NAS / Cockpit
+### Mount Shares
+
+**In the LXC (as root)**
+```
+groupadd -g 10000 lxc_shares
+
+# Different apps use different users, e.g. docker, plex, jellyfin
+usermod -aG lxc_shares USERNAME
+```
+
+Shutdown the LXC
+
+**On THe PVE Host**
+
+```
+mkdir -p /mnt/lxc_shares/NAS_NAME
+
+# Update paths and user creds
+{ echo '' ; echo '# Mount CIFS share on demand with rwx permissions for use in LXCs (manually added)' ; echo '//kye-1/SMB_NAME/ /mnt/lxc_shares/NAS_NAME cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0' ; } | tee -a /etc/fstab
+
+systemctl daemon-reload
+
+# Update the LXC_ID
+{ echo 'mp0: /mnt/lxc_shares/NAS_NAME/,mp=/mnt/nas' ; } | tee -a /etc/pve/lxc/LXC_ID.conf
+
+```
+
+LXC maybe needs additional commands
+```
+adduser --disabled-password --gecos "" --home "$(pwd)" --ingroup "docker" --no-create-home --uid "1000" "docker"
+```
+
+Restart the LXC
+
+Docker needs to use this user for the binds to work.
+
+### ZFS Setup
+
+Set max memory to 2Gb + (1Gb * TbOfStorage). 5.5Tb pool, rounded to 6tb = `8589934592`
+
+To permanently change the ARC limits, add the following line to `/etc/modprobe.d/zfs.conf``:
+```
+options zfs zfs_arc_max=8589934592
+```
 
 Using [this guide](https://homelab.casaursus.net/a-light-weight-nas/#install-cockpit)
 
@@ -123,5 +167,8 @@ Useful Links
 Start [here](https://wiki.joeplaa.com/en/tutorials/how-to-install-and-configure-fancontrol-pc)
 
 ## Docker & Docker Compose
+
+
+To run at boot `rc-update add docker boot`
 
 See [this guide](https://collabnix.com/how-to-install-the-latest-version-of-docker-compose-on-alpine-linuxin-2022/)

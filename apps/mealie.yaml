@@ -1,0 +1,32 @@
+---
+version: "3.7"
+services:
+  mealie-omni:
+    image: hkotel/mealie:omni-nightly
+    container_name: mealie
+    volumes:
+      - mealie-data:/app/data/
+    ports:
+      - 9925:80
+      - "3000:3000"
+      - "9000:9000"
+    environment:
+      - ALLOW_SIGNUP=true
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - BASE_URL=https://food.local.kye.dev
+      - DEFAULT_EMAIL=changeme@example.com
+      - DEFAULT_PASSWORD=MyPassword
+      - SMTP_HOST=smtp.mailbox.org
+      - SMTP_PORT=587
+      - SMTP_FROM_NAME=Mealie Recipe Administrator
+      - SMTP_AUTH_STRATEGY=SSL
+      - SMTP_FROM_EMAIL=mealie.admin@kye.dev
+      - SMTP_USER=tim@kye.dev
+      - SMTP_PASSWORD=__YOUR_SMPT_PASSWORD__
+    restart: always
+
+volumes:
+  mealie-data:
+    driver: local
