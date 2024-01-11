@@ -81,3 +81,11 @@ sysctl -p /etc/sysctl.d/99-tailscale.conf
 
 tailscale up --advertise-routes=192.168.0.0/24
 ```
+
+After installing tailscale you may see `Temporary failure in name resolution`. TO fix update `/etc/resolv.conf`
+```
+search .
+nameserver 1.1.1.1
+```
+
+IF that doesn't work you may have set the container to **Network > Static** without filling in the IP Address. Either add an IP or set to DHCP

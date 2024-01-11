@@ -140,6 +140,17 @@ Restart the LXC
 
 Docker needs to use this user for the binds to work.
 
+## Arr Stack
+
+See [this guide](https://www.synoforum.com/resources/ultimate-starter-page-1-jellyfin-jellyseerr-nzbget-torrents-and-arr-media-library-stack.184/)
+
+Or [this one](https://www.reddit.com/r/radarr/comments/yj4fcw/ultimate_starter_full_dockercompose_arr_media/)
+
+This is your [usenet provider](https://www.newsgroup.ninja/en/member)
+
+[Setup FlareSolverr](https://www.zenrows.com/blog/flaresolverr#set-up-with-prowlarr)
+
+
 ### ZFS Setup
 
 Set max memory to 2Gb + (1Gb * TbOfStorage). 5.5Tb pool, rounded to 6tb = `8589934592`
@@ -161,6 +172,11 @@ Useful Links
 - https://bayton.org/docs/linux/lxd/mount-cifssmb-shares-rw-in-lxd-containers/
 - https://www.youtube.com/watch?v=UnXxJMjW4LE
 - https://jo-me.github.io/proxmox-idmap-helper/
+
+
+## Moving Backups
+
+`cp /var/lib/vz/dump/vzdump-lxc-106-2024_01_10-16_30_03.* portainer/`
 
 ## Fan Control
 

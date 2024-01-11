@@ -1,26 +1,19 @@
-###########################################################################
-###########################################################################
-version: "3.7"
+version: "3.8"
 
 networks:
   media-network:
     name: media-network
     driver: bridge
-    ipam:
-      driver: default
-      config:
-      - subnet: ${DOCKER_SUBNET:?err}
-        gateway: ${DOCKER_GATEWAY:?err}
+    # ipam:
+    #   driver: default
+    #   config:
+    #   - subnet: ${DOCKER_SUBNET:?err}
+    #     gateway: ${DOCKER_GATEWAY:?err}
 
 ###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Gluetun (qmcgaw)
-##  Function: VPN Client
-##
-##  Documentation: https://github.com/qdm12/gluetun/wiki
-##
-###########################################################################
+##  Docker Compose File:    Gluetun (qmcgaw)
+##  Function:               VPN Client
+##  Documentation:          https://github.com/qdm12/gluetun/wiki
 ###########################################################################
 services:
   gluetun:
@@ -46,9 +39,10 @@ services:
       - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER:?err}
-      - OPENVPN_USER=${VPN_USERNAME:?err}
-      - OPENVPN_PASSWORD=${VPN_PASSWORD:?err}
-      - SERVER_REGION=${SERVER_REGION:?err}
+      # - OPENVPN_USER=${VPN_USERNAME}
+      # - OPENVPN_PASSWORD=${VPN_PASSWORD}
+      - SERVER_REGIONS=${SERVER_REGIONS:?err}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
       - SERVER_CITIES=${SERVER_CITIES}
       - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
       - FIREWALL_OUTBOUND_SUBNETS=${LOCAL_SUBNET:?err}
@@ -69,40 +63,61 @@ services:
       - media-network
 
 ###########################################################################
+##  Docker Compose File:  qBittorrent (LinuxServer.io)
+##  Function:             Torrent Download Client
+##  Documentation:        https://docs.linuxserver.io/images/docker-qbittorrent
 ###########################################################################
-##
-##    Docker Compose File: Authelia (Authelia)
-##    Function: Multi-factor authentication portal for your Apps
-##
-##    Documentation: https://hub.docker.com/r/authelia/authelia
-##    https://www.authelia.com/integration/prologue/get-started/
-##    https://www.linuxserver.io/blog/zero-trust-hosting-and-reverse-proxy-via-cloudflare-swag-and-authelia
-##
-###########################################################################
-###########################################################################
-  # authelia:
-  #   image: ghcr.io/authelia/authelia:latest
-  #   container_name: authelia
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/authelia:/config
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - UMASK=${UMASK:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #   restart: unless-stopped
-  #   networks:
-  #     - media-network
+  qbittorrent:
+    image: linuxserver/qbittorrent:4.6.0
+    container_name: qbittorrent
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/qbittorrent:/config
+      - ${FOLDER_FOR_MEDIA:?err}:/data
+    # depends_on:
+    # - gluetun
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - WEBUI_PORT=${WEBUI_PORT_QBITTORRENT:?err}
+      # - DOCKER_MODS=ghcr.io/gilbn/theme.park:qbittorrent
+      # - TP_THEME=${TP_THEME:?err}
+
+## Do Not Change Network for qBittorrent
+## qBittorrent MUST always use a VPN / Secure Internet connection
+
+    network_mode: "service:gluetun"
 
 ###########################################################################
+##  Docker Compose File:  SABnzbd (LinuxServer.io)
+##  Function:             Usenet Download Client
+##  Documentation:        https://docs.linuxserver.io/images/docker-sabnzbd
 ###########################################################################
-##
-##  Docker Compose File: Bazarr (LinuxServer.io)
-##  Function: Download subtitles for Radarr and Sonarr
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-bazarr
-##
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/sabnzbd:/config
+      - ${FOLDER_FOR_MEDIA:?err}:/data
+
+    ports:
+      - "${WEBUI_PORT_SABNZBD:?err}:8080"
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+      - DOCKER_MODS=ghcr.io/gilbn/theme.park:sabnzbd
+      - TP_THEME=${TP_THEME:?err}
+    networks:
+      - media-network
+
 ###########################################################################
+##  Docker Compose File:  Bazarr (LinuxServer.io)
+##  Function:             Download subtitles for Radarr and Sonarr
+##  Documentation:        https://docs.linuxserver.io/images/docker-bazarr
 ###########################################################################
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
@@ -117,125 +132,16 @@ services:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
-      - DOCKER_MODS=ghcr.io/gilbn/theme.park:bazarr
-      - TP_THEME=${TP_THEME:?err}
+      # - DOCKER_MODS=ghcr.io/gilbn/theme.park:bazarr
+      # - TP_THEME=${TP_THEME:?err}
     networks:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##    Docker Compose File: DDNS-Updater (qmcgaw)
-##    Function: Update Dynamic IP addresses for DNS A and/or AAAA records
-##
-##    Documentation: https://hub.docker.com/r/qmcgaw/ddns-updater
-##
-###########################################################################
-###########################################################################
-#   ddns-updater:
-#     image: qmcgaw/ddns-updater:latest
-#     container_name: ddns-updater
-#     restart: always
-#     volumes:
-#       - ${FOLDER_FOR_CONFIGS:?err}/ddns-updater:/updater/data
-#     ports:
-#       - ${WEBUI_PORT_DDNS_UPDATER:?err}:${WEBUI_PORT_DDNS_UPDATER:?err}/tcp
-#     environment:
-#       - PUID=${PUID:?err}
-#       - PGID=${PGID:?err}
-#       - UMASK=${UMASK:?err}
-#       - TZ=${TIMEZONE:?err}
-#       - CONFIG=
-#       - PERIOD=5m
-#       - UPDATE_COOLDOWN_PERIOD=5m
-#       - PUBLICIP_FETCHERS=all
-#       - PUBLICIP_HTTP_PROVIDERS=all
-#       - PUBLICIPV4_HTTP_PROVIDERS=all
-#       - PUBLICIPV6_HTTP_PROVIDERS=all
-#       - PUBLICIP_DNS_PROVIDERS=all
-#       - PUBLICIP_DNS_TIMEOUT=3s
-#       - HTTP_TIMEOUT=10s
-
-#       # Web UI
-#       - LISTENING_PORT=${WEBUI_PORT_DDNS_UPDATER:?err}
-#       - ROOT_URL=/
-
-#       # Backup
-#       - BACKUP_PERIOD=0 # 0 to disable
-#       - BACKUP_DIRECTORY=/updater/data
-
-#       # Other
-#       - LOG_LEVEL=info
-#       - LOG_CALLER=hidden
-#       - SHOUTRRR_ADDRESSES=
-
-# # NOTE: DDNS-Update MUST NOT connect to the Gluetun VPN container
-
-#     networks:
-#       - media-network
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Flaresolverr (Flaresolverr)
-##  Function: Cloudflare Proxy Server
-##
-##  Documentation: https://github.com/FlareSolverr/FlareSolverr
-##
-###########################################################################
-###########################################################################
-  # flaresolverr:
-  #   image: ghcr.io/flaresolverr/flaresolverr:latest
-  #   container_name: flaresolverr
-  #   restart: unless-stopped
-  #   ports:
-  #     - "${FLARESOLVERR_PORT:?err}:8191"
-  #   environment:
-  #     - LOG_LEVEL=info
-  #     - LOG_HTML=false
-  #     - CAPTCHA_SOLVER=none
-  #     - TZ=${TIMEZONE:?err}
-  #   networks:
-  #     - media-network
-
-###########################################################################
-###########################################################################
-##
-##    Docker Compose File: Heimdall (LinuxServer.io)
-##    Function: Organise links to web sites and web applications
-##
-##    Documentation: https://docs.linuxserver.io/images/docker-heimdall
-##    https://docs.linuxserver.io/general/swag#using-heimdall-as-the-home-page-at-domain-root
-##
-###########################################################################
-###########################################################################
-#   heimdall:
-#     image: lscr.io/linuxserver/heimdall:latest
-#     container_name: heimdall
-#     restart: unless-stopped
-#     volumes:
-#       - ${FOLDER_FOR_CONFIGS:?err}/heimdall:/config
-#     environment:
-#       - PUID=${PUID:?err}
-#       - PGID=${PGID:?err}
-#       - UMASK=${UMASK:?err}
-#       - TZ=${TIMEZONE:?err}
-
-# # NOTE: Heimdall MUST NOT connect to the Gluetun VPN container
-
-#     networks:
-#       - media-network
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Jellyfin (LinuxServer.io)
-##  Function: Media Server
-##
-##  Documentation: https://jellyfin.org/docs/general/administration/installing#docker
-##  https://jellyfin.org/docs/general/administration/hardware-acceleration/
-##
-###########################################################################
+##  Docker Compose File:  Jellyfin (LinuxServer.io)
+##  Function:             Media Server
+##  Documentation:        https://jellyfin.org/docs/general/administration/installing#docker
+##                        https://jellyfin.org/docs/general/administration/hardware-acceleration/
 ###########################################################################
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -262,14 +168,9 @@ services:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Jellyseerr (fallenbagel)
-##  Function: Media Request Manager
-##
-##  Documentation: https://hub.docker.com/r/fallenbagel/jellyseerr
-##
-###########################################################################
+##  Docker Compose File:  Jellyseerr (fallenbagel)
+##  Function:             Media Request Manager
+##  Documentation:        https://hub.docker.com/r/fallenbagel/jellyseerr
 ###########################################################################
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
@@ -288,14 +189,9 @@ services:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Lidarr (LinuxServer.io)
-##  Function: Music Library Manager
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-lidarr
-##
-###########################################################################
+##  Docker Compose File:  Lidarr (LinuxServer.io)
+##  Function:             Music Library Manager
+##  Documentation:        https://docs.linuxserver.io/images/docker-lidarr
 ###########################################################################
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
@@ -316,45 +212,12 @@ services:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Mylar3 (LinuxServer.io)
-##  Function: Comic Library Manager
-##
-##  Documentation: https://github.com/mylar3/mylar3/wiki
-##
-###########################################################################
-###########################################################################
-  # mylar3:
-  #   image: lscr.io/linuxserver/mylar3:latest
-  #   container_name: mylar3
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/mylar3:/config
-  #     - ${FOLDER_FOR_MEDIA:?err}:/data
-  #   ports:
-  #     - "${WEBUI_PORT_MYLAR3:?err}:8090"
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #     - DOCKER_MODS=ghcr.io/gilbn/theme.park:mylar3
-  #     - TP_THEME=${TP_THEME:?err}
-  #   networks:
-  #     - media-network
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Prowlarr (LinuxServer.io)
-##  Function: Indexer and Search Manager
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-prowlarr
-##
-###########################################################################
+##  Docker Compose File:  Prowlarr (LinuxServer.io)
+##  Function:             Indexer and Search Manager
+##  Documentation:        https://docs.linuxserver.io/images/docker-prowlarr
 ###########################################################################
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:develop
+    image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     restart: unless-stopped
     volumes:
@@ -371,45 +234,9 @@ services:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##  Docker Compose File: qBittorrent (LinuxServer.io)
-##  Function: Torrent Download Client
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-qbittorrent
-##
-###########################################################################
-###########################################################################
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    restart: unless-stopped
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/qbittorrent:/config
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-      - WEBUI_PORT=${WEBUI_PORT_QBITTORRENT:?err}
-      - DOCKER_MODS=ghcr.io/gilbn/theme.park:qbittorrent
-      - TP_THEME=${TP_THEME:?err}
-
-## Do Not Change Network for qBittorrent
-## qBittorrent MUST always use a VPN / Secure Internet connection
-
-    network_mode: "service:gluetun"
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Radarr (LinuxServer.io)
-##  Function: Movie Library Manager
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-radarr
-##
-###########################################################################
+##  Docker Compose File:  Radarr (LinuxServer.io)
+##  Function:             Movie Library Manager
+##  Documentation:        https://docs.linuxserver.io/images/docker-radarr
 ###########################################################################
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -430,70 +257,9 @@ services:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Readarr (LinuxServer.io)
-##  Function: Book Library Manager
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-readarr
-##
-###########################################################################
-###########################################################################
-  # readarr:
-  #   image: lscr.io/linuxserver/readarr:develop
-  #   container_name: readarr
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/readarr:/config
-  #     - ${FOLDER_FOR_MEDIA:?err}:/data
-  #   ports:
-  #     - "${WEBUI_PORT_READARR:?err}:8787"
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #     - DOCKER_MODS=ghcr.io/gilbn/theme.park:readarr
-  #     - TP_THEME=${TP_THEME:?err}
-  #   networks:
-  #     - media-network
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: SABnzbd (LinuxServer.io)
-##  Function: Usenet Download Client
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-sabnzbd
-##
-###########################################################################
-###########################################################################
-  sabnzbd:
-    image: lscr.io/linuxserver/sabnzbd:latest
-    container_name: sabnzbd
-    restart: unless-stopped
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/sabnzbd:/config
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-    ports:
-      - "${WEBUI_PORT_SABNZBD:?err}:8080"
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - TZ=${TIMEZONE:?err}
-      - DOCKER_MODS=ghcr.io/gilbn/theme.park:sabnzbd
-      - TP_THEME=${TP_THEME:?err}
-    networks:
-      - media-network
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Sonarr (LinuxServer.io)
-##  Function: Series Library Manager (TV Shows)
-##
-##  Documentation: https://docs.linuxserver.io/images/docker-sonarr
-##
-###########################################################################
+##  Docker Compose File:  Sonarr (LinuxServer.io)
+##  Function:             Series Library Manager (TV Shows)
+##  Documentation:        https://docs.linuxserver.io/images/docker-sonarr
 ###########################################################################
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -514,60 +280,11 @@ services:
       - media-network
 
 ###########################################################################
-###########################################################################
-##
-##    Docker Compose File: SWAG (LinuxServer.io)
-##    Function: Reverse proxy with Certbot, for Let's Encrypt / ZeroSSL
-##
-##    Documentation: https://docs.linuxserver.io/general/swag
-##    https://www.linuxserver.io/blog/zero-trust-hosting-and-reverse-proxy-via-cloudflare-swag-and-authelia
-##
-###########################################################################
-###########################################################################
-#   swag:
-#     image: lscr.io/linuxserver/swag:latest
-#     container_name: swag
-#     cap_add:
-#       - NET_ADMIN
-#     restart: unless-stopped
-#     volumes:
-#       - ${FOLDER_FOR_CONFIGS:?err}/swag:/config
-#     ports:
-#       - ${REVERSE_PROXY_PORT_HTTP:?err}:80
-#       - ${REVERSE_PROXY_PORT_HTTPS:?err}:443
-#     environment:
-#       - PUID=${PUID:?err}
-#       - PGID=${PGID:?err}
-#       - UMASK=${UMASK:?err}
-#       - TZ=${TIMEZONE:?err}
-#       - URL=${URL:?err}
-#       - SUBDOMAINS=${SUBDOMAINS}
-#       - VALIDATION=${VALIDATION:?err}
-#       - CERTPROVIDER=${CERTPROVIDER}
-#       - DNSPLUGIN=${DNSPLUGIN}
-#       - PROPAGATION=${PROPAGATION}
-#       - DUCKDNSTOKEN=${DUCKDNSTOKEN}
-#       - EMAIL=${EMAIL}
-#       - ONLY_SUBDOMAINS=${ONLY_SUBDOMAINS}
-#       - EXTRA_DOMAINS=${EXTRA_DOMAINS}
-#       - STAGING=${STAGING}
-
-# # NOTE: SWAG MUST NOT connect to the Gluetun VPN container
-
-#     networks:
-#       - media-network
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Tdarr V2 (haveagitgat/tdarr)
-##  Function: Tdarr V2 - Audio/Video library transcoding automation
-##            (Contains Tdarr_Server and WebUI ) 
-##
-##  Documentation: https://docs.tdarr.io/docs/installation/docker/run-compose/
-##  https://docs.tdarr.io/docs/installation/docker/hardware-transcoding
-##
-###########################################################################
+##  Docker Compose File:  Tdarr V2 (haveagitgat/tdarr)
+##  Function:             Tdarr V2 - Audio/Video library transcoding automation
+##                              (Contains Tdarr_Server and WebUI ) 
+##  Documentation:        https://docs.tdarr.io/docs/installation/docker/run-compose/
+##                        https://docs.tdarr.io/docs/installation/docker/hardware-transcoding
 ###########################################################################
   tdarr:
     image: ghcr.io/haveagitgat/tdarr:latest
@@ -616,15 +333,29 @@ services:
       - media-network
 
 ###########################################################################
+##  Docker Compose File:  Flaresolverr (Flaresolverr)
+##  Function:             Cloudflare Proxy Server
+##  Documentation:        https://github.com/FlareSolverr/FlareSolverr
 ###########################################################################
-##
-##  Docker Compose File: Unpackerr (Hotio.Dev)
-##  Function: Archive Media Extraction
-##
-##  Documentation: https://github.com/davidnewhall/unpackerr
-##  https://github.com/davidnewhall/unpackerr/blob/master/examples/docker-compose.yml
-##
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    ports:
+      - "${FLARESOLVERR_PORT:?err}:8191"
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=none
+      - TZ=${TIMEZONE:?err}
+    networks:
+      - media-network
+
 ###########################################################################
+##  Docker Compose File:  Unpackerr (Hotio.Dev)
+##  Function:             Archive Media Extraction
+##  Documentation:        https://github.com/davidnewhall/unpackerr
+##                        https://github.com/davidnewhall/unpackerr/blob/master/examples/docker-compose.yml
 ###########################################################################
   unpackerr:
     image: golift/unpackerr:latest
@@ -714,30 +445,3 @@ services:
     security_opt:
       - no-new-privileges:true
     network_mode: none
-
-###########################################################################
-###########################################################################
-##
-##  Docker Compose File: Whisparr (Hotio.Dev)
-##  Function: Adult Media Library Manager
-##
-##  Documentation: https://wiki.servarr.com/whisparr
-##
-###########################################################################
-###########################################################################
-  # whisparr:
-  #   image: hotio/whisparr:nightly
-  #   container_name: whisparr
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/whisparr:/config
-  #     - ${FOLDER_FOR_MEDIA:?err}:/data
-  #   ports:
-  #     - "${WEBUI_PORT_WHISPARR:?err}:6969"
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - UMASK=${UMASK:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #   networks:
-  #     - media-network
