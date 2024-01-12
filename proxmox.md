@@ -85,56 +85,6 @@ http:
 The Nginx proxy path must also have *Websocket Support* Enabled.
 
 
-
-### Mount Shares
-
-For VPN the LXC needs this in .conf
-
-```
-lxc.cgroup.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
-```
-
-
-**In the LXC (as root)**
-```
-groupadd -g 10000 nas_shares
-
-# Different apps use different users, e.g. docker, plex, jellyfin
-usermod -aG lxc_shares USERNAME
-```
-
-Shutdown the LXC
-
-**On THe PVE Host**
-
-```
-mkdir -p /mnt/lxc_shares/NAS_NAME
-
-Update `/etc/fstab`
-
-```
-//192.168.0.11/nas/ /mnt/lxc_shares/nas cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
-//192.168.0.11/media/ /mnt/lxc_shares/nas_media cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
-//192.168.0.11/media_root/ /mnt/lxc_shares/nas_media_root cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0777,file_mode=0777,user=media,pass=ijustwantmedia 0 0
-```
-
-then `systemctl daemon-reload`
-
-# Update the LXC_ID
-{ echo 'mp0: /mnt/lxc_shares/NAS_NAME/,mp=/mnt/nas' ; } | tee -a /etc/pve/lxc/LXC_ID.conf
-
-```
-
-LXC maybe needs additional commands
-```
-adduser --disabled-password --gecos "" --home "$(pwd)" --ingroup "docker" --no-create-home --uid "1000" "docker"
-```
-
-Restart the LXC
-
-Docker needs to use this user for the binds to work.
-
 ## ZFS on Proxmox Directly
 
 Create or import the zfs pool. [This video](https://www.youtube.com/watch?v=oSD-VoloQag) can with creation.
@@ -153,7 +103,7 @@ User perms still follow [this idea](https://forum.proxmox.com/threads/tutorial-u
 # In the LXC (run commands as root user)
 groupadd -g 10000 nas_shares
 
-# create a user in that group for docker to use
+# create a user in that group for docker to use (use `nas` for cockpit)
 useradd docker -u 1000 -g 10000 -m -s /bin/bash
 
 #Shutdown the LXC.
@@ -173,6 +123,7 @@ useradd nas -u 101000 -g 110000 -m -s /bin/bash
 # Move ownership to the mapped user
 chown -R nas:nas_shares /tank/apps/
 chown -R nas:nas_shares /tank/media_root/
+chown -R nas:nas_shares /tank/nas
 ```
 
 
@@ -230,7 +181,60 @@ To permanently change the ARC limits, add the following line to `/etc/modprobe.d
 options zfs zfs_arc_max=8589934592
 ```
 
+### Samba with Cockpit
+
 Using [this guide](https://homelab.casaursus.net/a-light-weight-nas/#install-cockpit)
+
+```
+apt update && apt dist-upgrade -y
+apt install cockpit --no-install-recommends
+
+# comment out root
+nano /etc/cockpit/disallowed-users
+```
+Allow reverse proxy: `nano /etc/cockpit/cockpit.conf`
+
+
+Installing sidecards, back in the shell
+```
+wget https://github.com/45Drives/cockpit-file-sharing/releases/download/v3.3.4/cockpit-file-sharing_3.3.4-1focal_all.deb
+wget https://github.com/45Drives/cockpit-navigator/releases/download/v0.5.10/cockpit-navigator_0.5.10-1focal_all.deb
+wget https://github.com/45Drives/cockpit-identities/releases/download/v0.1.12/cockpit-identities_0.1.12-1focal_all.deb
+apt install ./*.deb -y
+```
+
+#### Cockpit Reverse Proxy
+
+```
+[WebService]
+Origins = https://cockpit.local.kye.dev wss://cockpit.local.kye.dev
+ProtocolHeader = X-Forwarded-Proto
+```
+
+Then the Nginx proxy config needs this in advanced
+
+```
+location / {
+        # Required to proxy the connection to Cockpit
+        proxy_pass https://192.168.0.11:9090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Required for web sockets to function
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Pass ETag header from Cockpit to clients.
+        # See: https://github.com/cockpit-project/cockpit/issues/5239
+        gzip off;
+    }
+```
+
+Restart with `systemctl restart cockpit.service`
+
+### Other Stuff
 
 or maybe
 
@@ -278,3 +282,53 @@ scsi1: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K,size=19535145
 scsi2: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H,size=1953514584K,serial=S6PNNS0W105332H
 scsi3: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L,size=1953514584K,serial=S6PNNS0W105404L
 ```
+
+
+### Mount Shares
+
+For VPN the LXC needs this in .conf
+
+```
+lxc.cgroup.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net dev/net none bind,create=dir
+```
+
+
+**In the LXC (as root)**
+```
+groupadd -g 10000 nas_shares
+
+# Different apps use different users, e.g. docker, plex, jellyfin
+usermod -aG lxc_shares USERNAME
+```
+
+Shutdown the LXC
+
+**On THe PVE Host**
+
+```
+mkdir -p /mnt/lxc_shares/NAS_NAME
+
+Update `/etc/fstab`
+
+```
+//192.168.0.11/nas/ /mnt/lxc_shares/nas cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
+//192.168.0.11/media/ /mnt/lxc_shares/nas_media cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
+//192.168.0.11/media_root/ /mnt/lxc_shares/nas_media_root cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0777,file_mode=0777,user=media,pass=ijustwantmedia 0 0
+```
+
+then `systemctl daemon-reload`
+
+# Update the LXC_ID
+{ echo 'mp0: /mnt/lxc_shares/NAS_NAME/,mp=/mnt/nas' ; } | tee -a /etc/pve/lxc/LXC_ID.conf
+
+```
+
+LXC maybe needs additional commands
+```
+adduser --disabled-password --gecos "" --home "$(pwd)" --ingroup "docker" --no-create-home --uid "1000" "docker"
+```
+
+Restart the LXC
+
+Docker needs to use this user for the binds to work.
