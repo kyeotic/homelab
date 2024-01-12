@@ -20,6 +20,6 @@ services:
       - PUID=1000
       - PGID=1000
     volumes:
-      - ${USERDIR}/docker/plexms/config:/config
-      - ${USERDIR}/docker/plexms/transcodes:/transcode
-      - /mnt/data:/data
+      - /mnt/app_config/plexms/config:/config
+      - /mnt/app_config/plexms/transcodes:/transcode
+      - /mnt/media_root/media:/data
