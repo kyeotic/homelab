@@ -18,7 +18,7 @@ services:
       - TZ=America/Los_Angeles
       - PLEX_CLAIM=${PLEX_CLAIM:?err}
       - PUID=1000
-      - PGID=1000
+      - PGID=10000
     volumes:
       - /mnt/app_config/plexms/config:/config
       - /mnt/app_config/plexms/transcodes:/transcode
