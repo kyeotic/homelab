@@ -4,7 +4,7 @@ services:
     container_name: plex
     image: plexinc/pms-docker
     restart: unless-stopped
-    network_mode: host
+    # network_mode: host
     ports:
       - 32400:32400/tcp
       - 8324:8324/tcp
@@ -19,6 +19,7 @@ services:
       - PLEX_CLAIM=${PLEX_CLAIM:?err}
       - PUID=1000
       - PGID=10000
+      - ADVERTISE_IP=http://192.168.0.20:32400
     volumes:
       - /mnt/app_config/plexms/config:/config
       - /mnt/app_config/plexms/transcodes:/transcode
