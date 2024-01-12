@@ -84,31 +84,21 @@ http:
 
 The Nginx proxy path must also have *Websocket Support* Enabled.
 
-## NAS
 
-Install TrueNAS on VM
-
-### Passthrough
-
-PassThrough Devices ([Guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM)) and [video](https://www.youtube.com/watch?v=MkK-9_-2oko))
-
-| Name     | Serial          | Serial ID                                   |
-| -------- | --------------- | ------------------------------------------- |
-| /dev/sda | S6PNNS0W105328K | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K |
-| /dev/sdb | S6PNNS0W105332H | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H |
-| /dev/sdc | S6PNNS0W105404L | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L |
-
-```
-scsi1: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K,size=1953514584K,serial=S6PNNS0W105328K
-scsi2: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H,size=1953514584K,serial=S6PNNS0W105332H
-scsi3: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L,size=1953514584K,serial=S6PNNS0W105404L
-```
 
 ### Mount Shares
 
+For VPN the LXC needs this in .conf
+
+```
+lxc.cgroup.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net dev/net none bind,create=dir
+```
+
+
 **In the LXC (as root)**
 ```
-groupadd -g 10000 lxc_shares
+groupadd -g 10000 nas_shares
 
 # Different apps use different users, e.g. docker, plex, jellyfin
 usermod -aG lxc_shares USERNAME
@@ -121,10 +111,15 @@ Shutdown the LXC
 ```
 mkdir -p /mnt/lxc_shares/NAS_NAME
 
-# Update paths and user creds
-{ echo '' ; echo '# Mount CIFS share on demand with rwx permissions for use in LXCs (manually added)' ; echo '//kye-1/SMB_NAME/ /mnt/lxc_shares/NAS_NAME cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0' ; } | tee -a /etc/fstab
+Update `/etc/fstab`
 
-systemctl daemon-reload
+```
+//192.168.0.11/nas/ /mnt/lxc_shares/nas cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
+//192.168.0.11/media/ /mnt/lxc_shares/nas_media cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
+//192.168.0.11/media_root/ /mnt/lxc_shares/nas_media_root cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0777,file_mode=0777,user=media,pass=ijustwantmedia 0 0
+```
+
+then `systemctl daemon-reload`
 
 # Update the LXC_ID
 { echo 'mp0: /mnt/lxc_shares/NAS_NAME/,mp=/mnt/nas' ; } | tee -a /etc/pve/lxc/LXC_ID.conf
@@ -140,9 +135,84 @@ Restart the LXC
 
 Docker needs to use this user for the binds to work.
 
+## ZFS on Proxmox Directly
+
+Create or import the zfs pool. [This video](https://www.youtube.com/watch?v=oSD-VoloQag) can with creation.
+
+For each LXC that needs a mount
+
+```
+pct set 105 -mp0 /tank/media_root,mp=/mnt/media_root
+pct set 105 -mp1 /tank/apps,mp=/mnt/app_config
+```
+
+User perms still follow [this idea](https://forum.proxmox.com/threads/tutorial-unprivileged-lxcs-mount-cifs-shares.101795/)
+
+1. 
+```
+# In the LXC (run commands as root user)
+groupadd -g 10000 nas_shares
+
+# create a user in that group for docker to use
+useradd docker -u 1000 -g 10000 -m -s /bin/bash
+
+#Shutdown the LXC.
+```
+
+On the host we will map
+uid: 101000 (maps to LXC 1000)
+gid: 110000 (maps to LXC 10000)
+
+```
+# Create the group that maps to nas_shares on the lxc
+groupadd -g 110000 nas_shares
+
+# Create the mapped user
+useradd nas -u 101000 -g 110000 -m -s /bin/bash
+
+# Move ownership to the mapped user
+chown -R nas:nas_shares /tank/apps/
+chown -R nas:nas_shares /tank/media_root/
+```
+
+
+this is needed for docker/VPN setups
+run `nano /etc/pve/lxc/105.conf` and add
+```
+lxc.cgroup2.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net dev/net none bind,create=dir
+```
+
+### User Commands
+
+```
+# List Users
+cat /etc/passwd
+
+# List Groups
+getent group
+
+# List Group Members
+getent group nas_shares
+
+# Create a group with an ID named "nas_shares"
+groupadd -g 1000 nas_shares
+
+# Delete a Group
+groupdel nas_shares
+
+# Create a user with a UID, and add it to a GID
+useradd lxc_docker -u 1000 -g 1000 -m -s /bin/bash
+
+# Delete a user
+deluser nas_root
+
+```
+
 ## Arr Stack
 
 See [this guide](https://www.synoforum.com/resources/ultimate-starter-page-1-jellyfin-jellyseerr-nzbget-torrents-and-arr-media-library-stack.184/)
+or [its source](https://github.com/geekau/media-stack)
 
 Or [this one](https://www.reddit.com/r/radarr/comments/yj4fcw/ultimate_starter_full_dockercompose_arr_media/)
 
@@ -184,7 +254,27 @@ Start [here](https://wiki.joeplaa.com/en/tutorials/how-to-install-and-configure-
 
 ## Docker & Docker Compose
 
-
 To run at boot `rc-update add docker boot`
 
 See [this guide](https://collabnix.com/how-to-install-the-latest-version-of-docker-compose-on-alpine-linuxin-2022/)
+
+
+## NAS (Don't do this anymore)
+
+Install TrueNAS on VM
+
+### Passthrough (Don't do this anymore)
+
+PassThrough Devices ([Guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM)) and [video](https://www.youtube.com/watch?v=MkK-9_-2oko))
+
+| Name     | Serial          | Serial ID                                   |
+| -------- | --------------- | ------------------------------------------- |
+| /dev/sda | S6PNNS0W105328K | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K |
+| /dev/sdb | S6PNNS0W105332H | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H |
+| /dev/sdc | S6PNNS0W105404L | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L |
+
+```
+scsi1: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K,size=1953514584K,serial=S6PNNS0W105328K
+scsi2: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H,size=1953514584K,serial=S6PNNS0W105332H
+scsi3: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L,size=1953514584K,serial=S6PNNS0W105404L
+```

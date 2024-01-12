@@ -51,20 +51,19 @@ Then on LXC
 
 ```
 
-    Install Tailscale on Alpine Linux
+# Install Tailscale on Alpine Linux
+apk add tailscale
 
-# apk add tailscale
-
-    Use OpenRC to enable and start the service
+# Use OpenRC to enable and start the service
 
 rc-update add tailscale
 rc-service tailscale start
 
-    Authenticate and connect your machine to your Tailscale network
+# Authenticate and connect your machine to your Tailscale network
 
 tailscale up
 
-    You’re connected! You can find your Tailscale IPv4 address by running:
+# You’re connected! You can find your Tailscale IPv4 address by running:
 
 tailscale ip -4
 

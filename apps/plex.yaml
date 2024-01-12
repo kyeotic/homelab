@@ -16,7 +16,7 @@ services:
       - 32414:32414/udp
     environment:
       - TZ=America/Los_Angeles
-      - PLEX_CLAIM=_GET_A_PLEX_CLAIM
+      - PLEX_CLAIM=${PLEX_CLAIM:?err}
       - PUID=1000
       - PGID=1000
     volumes:

@@ -13,11 +13,11 @@ networks:
 ###########################################################################
 ##  Docker Compose File:    Gluetun (qmcgaw)
 ##  Function:               VPN Client
-##  Documentation:          https://github.com/qdm12/gluetun/wiki
+##  Documentation:          https://github.com/qdm12/gluetun-wiki
 ###########################################################################
 services:
   gluetun:
-    image: qmcgaw/gluetun:latest
+    image: qmcgaw/gluetun:v3.35.0
     container_name: gluetun
     restart: always
     cap_add:
@@ -75,7 +75,8 @@ services:
       - ${FOLDER_FOR_CONFIGS:?err}/qbittorrent:/config
       - ${FOLDER_FOR_MEDIA:?err}:/data
     # depends_on:
-    # - gluetun
+    #   gluetun:
+    #     condition: service_healthy
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -89,6 +90,32 @@ services:
 ## qBittorrent MUST always use a VPN / Secure Internet connection
 
     network_mode: "service:gluetun"
+
+###########################################################################
+##  Docker Compose File:  transmission (LinuxServer.io)
+##  Function:             Torrent Download Client
+##  Documentation:        https://docs.linuxserver.io/images/docker-transmission/
+###########################################################################
+  # transmission:
+  #   image: lscr.io/linuxserver/transmission:latest
+  #   container_name: transmission
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - USER=admin
+  #     - PASS=${TRANSMISSION_PASSWORD:?err}
+  #   volumes:
+  #     # - /srv/transmission/transmission:/config
+  #     - ${FOLDER_FOR_CONFIGS:?err}/transmission:/config
+  #     - ${FOLDER_FOR_MEDIA:?err}:/data
+  #   healthcheck:
+  #     disable: true
+  #   depends_on:
+  #     - gluetun
+  #   network_mode: "service:gluetun"
+  #   restart: unless-stopped
 
 ###########################################################################
 ##  Docker Compose File:  SABnzbd (LinuxServer.io)
@@ -143,50 +170,50 @@ services:
 ##  Documentation:        https://jellyfin.org/docs/general/administration/installing#docker
 ##                        https://jellyfin.org/docs/general/administration/hardware-acceleration/
 ###########################################################################
-  jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
-    container_name: jellyfin
-    restart: unless-stopped
-# Add Configurations for GPU Hardware Rendering Here:
-#    devices:
-#      - /dev/dri/renderD128:/dev/dri/renderD128
-#      - /dev/dri/card0:/dev/dri/card0
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/jellyfin:/config
-      - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
-    ports:
-      - "${WEBUI_PORT_JELLYFIN:?err}:8096"
-#      - 7359:7359/udp      # Enable for DLNA - Only works on HOST Network Mode
-#      - 1900:1900/udp      # Enable for DLNA - Only works on HOST Network Mode
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-#      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
-    networks:
-      - media-network
+#   jellyfin:
+#     image: lscr.io/linuxserver/jellyfin:latest
+#     container_name: jellyfin
+#     restart: unless-stopped
+# # Add Configurations for GPU Hardware Rendering Here:
+# #    devices:
+# #      - /dev/dri/renderD128:/dev/dri/renderD128
+# #      - /dev/dri/card0:/dev/dri/card0
+#     volumes:
+#       - ${FOLDER_FOR_CONFIGS:?err}/jellyfin:/config
+#       - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
+#     ports:
+#       - "${WEBUI_PORT_JELLYFIN:?err}:8096"
+# #      - 7359:7359/udp      # Enable for DLNA - Only works on HOST Network Mode
+# #      - 1900:1900/udp      # Enable for DLNA - Only works on HOST Network Mode
+#     environment:
+#       - PUID=${PUID:?err}
+#       - PGID=${PGID:?err}
+#       - UMASK=${UMASK:?err}
+#       - TZ=${TIMEZONE:?err}
+# #      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
+#     networks:
+#       - media-network
 
 ###########################################################################
 ##  Docker Compose File:  Jellyseerr (fallenbagel)
 ##  Function:             Media Request Manager
 ##  Documentation:        https://hub.docker.com/r/fallenbagel/jellyseerr
 ###########################################################################
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
-    restart: unless-stopped
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/jellyseerr:/app/config
-    ports:
-      - "${WEBUI_PORT_JELLYSEERR:?err}:5055"
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-    networks:
-      - media-network
+  # jellyseerr:
+  #   image: fallenbagel/jellyseerr:latest
+  #   container_name: jellyseerr
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/jellyseerr:/app/config
+  #   ports:
+  #     - "${WEBUI_PORT_JELLYSEERR:?err}:5055"
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #   networks:
+  #     - media-network
 
 ###########################################################################
 ##  Docker Compose File:  Lidarr (LinuxServer.io)
@@ -286,51 +313,51 @@ services:
 ##  Documentation:        https://docs.tdarr.io/docs/installation/docker/run-compose/
 ##                        https://docs.tdarr.io/docs/installation/docker/hardware-transcoding
 ###########################################################################
-  tdarr:
-    image: ghcr.io/haveagitgat/tdarr:latest
-    container_name: tdarr
-    restart: unless-stopped
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/server:/app/server
-      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
-      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
-      - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-    ports:
-      - "${TDARR_SERVER_PORT:?err}:${TDARR_SERVER_PORT:?err}"
-      - "${WEBUI_PORT_TDARR:?err}:${WEBUI_PORT_TDARR:?err}"
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-      - serverIP=0.0.0.0
-      - serverPort=${TDARR_SERVER_PORT:?err}
-      - webUIPort=${WEBUI_PORT_TDARR:?err}
-      - internalNode=true
-      - nodeID=Tdarr_Server
-    networks:
-      - media-network
+  # tdarr:
+  #   image: ghcr.io/haveagitgat/tdarr:latest
+  #   container_name: tdarr
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/server:/app/server
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
+  #     - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
+  #     - ${FOLDER_FOR_MEDIA:?err}:/data
+  #   ports:
+  #     - "${TDARR_SERVER_PORT:?err}:${TDARR_SERVER_PORT:?err}"
+  #     - "${WEBUI_PORT_TDARR:?err}:${WEBUI_PORT_TDARR:?err}"
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - serverIP=0.0.0.0
+  #     - serverPort=${TDARR_SERVER_PORT:?err}
+  #     - webUIPort=${WEBUI_PORT_TDARR:?err}
+  #     - internalNode=true
+  #     - nodeID=Tdarr_Server
+  #   networks:
+  #     - media-network
 
-  tdarr-node:
-    image: ghcr.io/haveagitgat/tdarr_node:latest
-    container_name: tdarr-node
-    restart: unless-stopped
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
-      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
-      - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-      - nodeID=Tdarr_Node_1
-      - serverIP=0.0.0.0
-      - serverPort=${TDARR_SERVER_PORT:?err}
-    networks:
-      - media-network
+  # tdarr-node:
+  #   image: ghcr.io/haveagitgat/tdarr_node:latest
+  #   container_name: tdarr-node
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
+  #     - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
+  #     - ${FOLDER_FOR_MEDIA:?err}:/data
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - nodeID=Tdarr_Node_1
+  #     - serverIP=0.0.0.0
+  #     - serverPort=${TDARR_SERVER_PORT:?err}
+  #   networks:
+  #     - media-network
 
 ###########################################################################
 ##  Docker Compose File:  Flaresolverr (Flaresolverr)
@@ -384,7 +411,7 @@ services:
       - UN_DIR_MODE=0775
       # Sonarr Config - Copy API Key from: http://sonarr:8989/general/settings
       - UN_SONARR_0_URL=http://sonarr:8989
-      - UN_SONARR_0_API_KEY=
+      - UN_SONARR_0_API_KEY=${SONARR_API_KEY}
       - UN_SONARR_0_PATHS_0=/data/torrents/anime
       - UN_SONARR_0_PATHS_1=/data/torrents/series
       - UN_SONARR_0_PROTOCOLS=torrent
@@ -393,7 +420,7 @@ services:
       - UN_SONARR_0_DELETE_DELAY=5m
       # Radarr Config - Copy API Key from: http://radarr:7878/general/settings
       - UN_RADARR_0_URL=http://radarr:7878
-      - UN_RADARR_0_API_KEY=
+      - UN_RADARR_0_API_KEY=${RADARR_API_KEY}
       - UN_RADARR_0_PATHS_0=/data/torrents/movies
       - UN_RADARR_0_PROTOCOLS=torrent
       - UN_RADARR_0_TIMEOUT=10s
@@ -401,47 +428,12 @@ services:
       - UN_RADARR_0_DELETE_DELAY=5m
       # Lidarr Config - Copy API Key from: http://lidarr:8686/general/settings
       - UN_LIDARR_0_URL=http://lidarr:8686
-      - UN_LIDARR_0_API_KEY=
+      - UN_LIDARR_0_API_KEY=${LIDARR_API_KEY}
       - UN_LIDARR_0_PATHS_0=/data/torrents/music
       - UN_LIDARR_0_PROTOCOLS=torrent
       - UN_LIDARR_0_TIMEOUT=10s
       - UN_LIDARR_0_DELETE_ORIG=false
       - UN_LIDARR_0_DELETE_DELAY=5m
-      # Readarr Config - Copy API Key from: http://readarr:8787/general/settings
-      - UN_READARR_0_URL=http://readarr:8787
-      - UN_READARR_0_API_KEY=
-      - UN_READARR_0_PATHS_0=/data/torrents/books
-      - UN_READARR_0_PROTOCOLS=torrent
-      - UN_READARR_0_TIMEOUT=10s
-      - UN_READARR_0_DELETE_ORIG=false
-      - UN_READARR_0_DELETE_DELAY=5m
-      # Folder Config
-      - UN_FOLDER_0_PATH=
-      - UN_FOLDER_0_EXTRACT_PATH=
-      - UN_FOLDER_0_DELETE_AFTER=10m
-      - UN_FOLDER_0_DELETE_ORIGINAL=false
-      - UN_FOLDER_0_DELETE_FILES=false
-      - UN_FOLDER_0_MOVE_BACK=false
-      # Webhook Config
-      - UN_WEBHOOK_0_URL=
-      - UN_WEBHOOK_0_NAME=
-      - UN_WEBHOOK_0_NICKNAME=Unpackerr
-      - UN_WEBHOOK_0_CHANNEL=
-      - UN_WEBHOOK_0_TIMEOUT=10s
-      - UN_WEBHOOK_0_SILENT=false
-      - UN_WEBHOOK_0_IGNORE_SSL=false
-      - UN_WEBHOOK_0_EXCLUDE_0=
-      - UN_WEBHOOK_0_EVENTS_0=0
-      - UN_WEBHOOK_0_TEMPLATE_PATH=
-      - UN_WEBHOOK_0_CONTENT_TYPE=application/json
-      # Command Hook Config
-      - UN_CMDHOOK_0_COMMAND=
-      - UN_CMDHOOK_0_NAME=
-      - UN_CMDHOOK_0_TIMEOUT=10s
-      - UN_CMDHOOK_0_SILENT=false
-      - UN_CMDHOOK_0_SHELL=false
-      - UN_CMDHOOK_0_EXCLUDE_0=
-      - UN_CMDHOOK_0_EVENTS_0=0
     security_opt:
       - no-new-privileges:true
     network_mode: none
