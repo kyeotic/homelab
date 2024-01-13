@@ -170,50 +170,56 @@ services:
 ##  Documentation:        https://jellyfin.org/docs/general/administration/installing#docker
 ##                        https://jellyfin.org/docs/general/administration/hardware-acceleration/
 ###########################################################################
-#   jellyfin:
-#     image: lscr.io/linuxserver/jellyfin:latest
-#     container_name: jellyfin
-#     restart: unless-stopped
-# # Add Configurations for GPU Hardware Rendering Here:
-# #    devices:
-# #      - /dev/dri/renderD128:/dev/dri/renderD128
-# #      - /dev/dri/card0:/dev/dri/card0
-#     volumes:
-#       - ${FOLDER_FOR_CONFIGS:?err}/jellyfin:/config
-#       - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
-#     ports:
-#       - "${WEBUI_PORT_JELLYFIN:?err}:8096"
-# #      - 7359:7359/udp      # Enable for DLNA - Only works on HOST Network Mode
-# #      - 1900:1900/udp      # Enable for DLNA - Only works on HOST Network Mode
-#     environment:
-#       - PUID=${PUID:?err}
-#       - PGID=${PGID:?err}
-#       - UMASK=${UMASK:?err}
-#       - TZ=${TIMEZONE:?err}
-# #      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
-#     networks:
-#       - media-network
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    # Hardware Acceleration
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/kfd:/dev/kfd
+    group_add:
+      - "106" # Change this to match your "render" host group id and remove this comment
+      - "44" # Change this to match your "video" host group id and remove this comment
+    # End Hardware Acceleration
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/jellyfin:/config
+      - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
+    ports:
+      - "${WEBUI_PORT_JELLYFIN:?err}:8096"
+#      - 7359:7359/udp      # Enable for DLNA - Only works on HOST Network Mode
+#      - 1900:1900/udp      # Enable for DLNA - Only works on HOST Network Mode
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - ROC_ENABLE_PRE_VEGA=1 # Hardware Acceleration
+      - DOCKER_MODS=linuxserver/mods:jellyfin-amd
+#      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
+    networks:
+      - media-network
 
 ###########################################################################
 ##  Docker Compose File:  Jellyseerr (fallenbagel)
 ##  Function:             Media Request Manager
 ##  Documentation:        https://hub.docker.com/r/fallenbagel/jellyseerr
 ###########################################################################
-  # jellyseerr:
-  #   image: fallenbagel/jellyseerr:latest
-  #   container_name: jellyseerr
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/jellyseerr:/app/config
-  #   ports:
-  #     - "${WEBUI_PORT_JELLYSEERR:?err}:5055"
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - UMASK=${UMASK:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #   networks:
-  #     - media-network
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/jellyseerr:/app/config
+    ports:
+      - "${WEBUI_PORT_JELLYSEERR:?err}:5055"
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+    networks:
+      - media-network
 
 ###########################################################################
 ##  Docker Compose File:  Lidarr (LinuxServer.io)
@@ -313,51 +319,51 @@ services:
 ##  Documentation:        https://docs.tdarr.io/docs/installation/docker/run-compose/
 ##                        https://docs.tdarr.io/docs/installation/docker/hardware-transcoding
 ###########################################################################
-  # tdarr:
-  #   image: ghcr.io/haveagitgat/tdarr:latest
-  #   container_name: tdarr
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/server:/app/server
-  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
-  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
-  #     - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
-  #     - ${FOLDER_FOR_MEDIA:?err}:/data
-  #   ports:
-  #     - "${TDARR_SERVER_PORT:?err}:${TDARR_SERVER_PORT:?err}"
-  #     - "${WEBUI_PORT_TDARR:?err}:${WEBUI_PORT_TDARR:?err}"
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - UMASK=${UMASK:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #     - serverIP=0.0.0.0
-  #     - serverPort=${TDARR_SERVER_PORT:?err}
-  #     - webUIPort=${WEBUI_PORT_TDARR:?err}
-  #     - internalNode=true
-  #     - nodeID=Tdarr_Server
-  #   networks:
-  #     - media-network
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/server:/app/server
+      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
+      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
+      - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
+      - ${FOLDER_FOR_MEDIA:?err}:/data
+    ports:
+      - "${TDARR_SERVER_PORT:?err}:${TDARR_SERVER_PORT:?err}"
+      - "${WEBUI_PORT_TDARR:?err}:${WEBUI_PORT_TDARR:?err}"
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - serverIP=0.0.0.0
+      - serverPort=${TDARR_SERVER_PORT:?err}
+      - webUIPort=${WEBUI_PORT_TDARR:?err}
+      - internalNode=true
+      - nodeID=Tdarr_Server
+    networks:
+      - media-network
 
-  # tdarr-node:
-  #   image: ghcr.io/haveagitgat/tdarr_node:latest
-  #   container_name: tdarr-node
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
-  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
-  #     - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
-  #     - ${FOLDER_FOR_MEDIA:?err}:/data
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - UMASK=${UMASK:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #     - nodeID=Tdarr_Node_1
-  #     - serverIP=0.0.0.0
-  #     - serverPort=${TDARR_SERVER_PORT:?err}
-  #   networks:
-  #     - media-network
+  tdarr-node:
+    image: ghcr.io/haveagitgat/tdarr_node:latest
+    container_name: tdarr-node
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/configs:/app/configs
+      - ${FOLDER_FOR_CONFIGS:?err}/tdarr/logs:/app/logs
+      - ${FOLDER_FOR_MEDIA:?err}/media/tdarr_transcode_cache:/temp
+      - ${FOLDER_FOR_MEDIA:?err}:/data
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - nodeID=Tdarr_Node_1
+      - serverIP=0.0.0.0
+      - serverPort=${TDARR_SERVER_PORT:?err}
+    networks:
+      - media-network
 
 ###########################################################################
 ##  Docker Compose File:  Flaresolverr (Flaresolverr)

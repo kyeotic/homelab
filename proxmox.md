@@ -134,6 +134,40 @@ lxc.cgroup2.devices.allow: c 10:200 rwm
 lxc.mount.entry: /dev/net dev/net none bind,create=dir
 ```
 
+### GPU/Hardware Transcoding
+
+Following [this guide](https://dustri.org/b/video-acceleration-in-jellyfin-inside-a-proxmox-container.html)
+
+run `nano /etc/pve/lxc/105.conf` and add
+```
+# Needed for GPU/transcoding, check the allow c values with stat /dev/DEVICE
+lxc.cgroup2.devices.allow: c 226:0 rwm
+lxc.cgroup2.devices.allow: c 226:128 rwm
+lxc.cgroup2.devices.allow: c 235:* rwm
+lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
+lxc.mount.entry: /dev/dri/renderD128 dev/renderD128 none bind,optional,create=file
+lxc.mount.entry: /dev/kfd dev/kfd none bind,optional,create=file
+```
+
+On Host Shell
+
+```
+$ cat > /etc/udev/rules.d/99-intel-chmod666.rules << 'EOF'
+KERNEL=="renderD128", MODE="0666"
+KERNEL=="kfd", MODE="0666"
+KERNEL=="kfd", GROUP="render", MODE="0666" 
+KERNEL=="card0", MODE="0666"
+EOF
+$ udevadm control --reload-rules && udevadm trigger
+```
+
+Restart LXC, then follow [this guide](https://jellyfin.org/docs/general/administration/hardware-acceleration/amd#configure-with-linux-virtualization)
+
+```
+getent group render | cut -d: -f3 # 106
+getent group video | cut -d: -f3 # 44
+```
+
 ### User Commands
 
 ```
@@ -170,6 +204,8 @@ Or [this one](https://www.reddit.com/r/radarr/comments/yj4fcw/ultimate_starter_f
 This is your [usenet provider](https://www.newsgroup.ninja/en/member)
 
 [Setup FlareSolverr](https://www.zenrows.com/blog/flaresolverr#set-up-with-prowlarr)
+
+Final setup with [quality profiles](https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/)
 
 
 ### ZFS Setup
