@@ -1,0 +1,19 @@
+services:
+  enshrouded:
+    image: sknnr/enshrouded-dedicated-server:v2.0.4
+    ports:
+      - 15636:15636/udp
+      - 15637:15637/udp
+    env_file:
+      - stack.env
+    volumes:
+      - /mnt/game-saves/enshrouded:/home/steam/enshrouded/savegame
+### ENV
+# chown -R 10000:10000 /mnt/game-saves/enshrouded
+
+SERVER_NAME="Foggy Loggins"
+SERVER_PASSWORD=logeditor
+GAME_PORT=15636
+QUERY_PORT=15637
+SERVER_SLOTS=4
+SERVER_IP=192.168.0.25

@@ -21,9 +21,11 @@ This document details the network design for the homelab.
 | Plex      | 192.168.0.14  | Plex                         |
 | HOAS      | 192.168.0.15  | Home Assistant OS            |
 | PiHole    | 192.168.0.16  | Pi Hole DNS Blocker          |
+| AdGuard   | 192.168.0.17  | Pi Hole DNS Blocker          |
 | VPN       | 192.168.0.18  | Tailscale Router             |
 | Portainer | 192.168.0.20  | Docker and Portainer         |
 | Mealie    | 192.168.0.21  | Mealie                       |
+| Games     | 192.168.0.25  | Game Server LXC              |
 | Kye-1     | 192.168.0.100 | Tims Main PC                 |
 | Kate      | 192.168.0.105 | Kate's iPhone                |
 | KyeNAS    | 192.168.0.200 | Old Synology NAS, deprecated |
@@ -44,6 +46,15 @@ Consider the following when designing
 
 
 ## VPN
+
+First, for LXC
+
+this is needed for docker/VPN setups
+run `nano /etc/pve/lxc/105.conf` and add
+```
+lxc.cgroup2.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net dev/net none bind,create=dir
+```
 
 Install [with this](https://tailscale.com/kb/1130/lxc-unprivileged)
 
@@ -88,3 +99,13 @@ nameserver 1.1.1.1
 ```
 
 IF that doesn't work you may have set the container to **Network > Static** without filling in the IP Address. Either add an IP or set to DHCP
+
+## WSL Networking Bridging
+
+On Host, in admin powershell
+
+```
+netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=$WSL_IP
+```
+
+get the WSL IP by running `ip -c a` from WSL

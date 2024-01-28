@@ -6,12 +6,19 @@
 
 | Name           | Type | IP Address   | Alias                                             |
 | -------------- | ---- | ------------ | ------------------------------------------------- |
-| Home Assistant | LXC  | 192.168.0.15 | [hoas&homeassistant].local.kye.dev                |
+| Home Assistant | LXC  | 192.168.0.15 | homeassistant.local.kye.dev                       |
 | Nginx          | LXC  | 192.168.0.12 | nginx.local.kye.dev                               |
 | PiHole         | LXC  | 192.168.0.17 | http://192.168.0.17/admin/login.php               |
 | Mealie         | LXC  | 192.168.0.21 | food.local.kye.dev                                |
 | DDns           | LXC  | DHCP         | https://crazymax.dev/ddns-route53/install/docker/ |
 
+
+## Current Server Specs
+
+| Component | Spec                       |
+| --------- | -------------------------- |
+| CPU       | AMD Ryzen 6-core 12-Thread |
+| RAM       | 96BG DDR5 5200mhz          |
 
 ## Initial Setup
 
@@ -89,26 +96,6 @@ The Nginx proxy path must also have *Websocket Support* Enabled.
 
 Create or import the zfs pool. [This video](https://www.youtube.com/watch?v=oSD-VoloQag) can with creation.
 
-For each LXC that needs a mount
-
-```
-pct set 105 -mp0 /tank/media_root,mp=/mnt/media_root
-pct set 105 -mp1 /tank/apps,mp=/mnt/app_config
-```
-
-User perms still follow [this idea](https://forum.proxmox.com/threads/tutorial-unprivileged-lxcs-mount-cifs-shares.101795/)
-
-1. 
-```
-# In the LXC (run commands as root user)
-groupadd -g 10000 nas_shares
-
-# create a user in that group for docker to use (use `nas` for cockpit)
-useradd docker -u 1000 -g 10000 -m -s /bin/bash
-
-#Shutdown the LXC.
-```
-
 On the host we will map
 uid: 101000 (maps to LXC 1000)
 gid: 110000 (maps to LXC 10000)
@@ -126,13 +113,28 @@ chown -R nas:nas_shares /tank/media_root/
 chown -R nas:nas_shares /tank/nas
 ```
 
+For each LXC that needs a mount
 
-this is needed for docker/VPN setups
-run `nano /etc/pve/lxc/105.conf` and add
 ```
-lxc.cgroup2.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
+pct set 105 -mp0 /tank/media_root,mp=/mnt/media_root
+pct set 105 -mp1 /tank/apps,mp=/mnt/app_config
+
+# for games
+pct set 110 -mp1 /tank/nas/game-saves,mp=/mnt/game-saves
 ```
+
+User perms still follow [this idea](https://forum.proxmox.com/threads/tutorial-unprivileged-lxcs-mount-cifs-shares.101795/)
+
+1. 
+```
+# In the LXC (run commands as root user)
+groupadd -g 10000 nas_shares
+
+# create a user in that group for docker to use (use `nas` for cockpit)
+useradd docker -u 1000 -g 10000 -m -s /bin/bash
+
+```
+
 
 ### GPU/Hardware Transcoding
 
@@ -152,7 +154,7 @@ lxc.mount.entry: /dev/kfd dev/kfd none bind,optional,create=file
 On Host Shell
 
 ```
-$ cat > /etc/udev/rules.d/99-intel-chmod666.rules << 'EOF'
+$ cat > /etc/udev/rules.d/99-gpu-chmod666.rules << 'EOF'
 KERNEL=="renderD128", MODE="0666"
 KERNEL=="kfd", MODE="0666"
 KERNEL=="kfd", GROUP="render", MODE="0666" 
@@ -188,6 +190,9 @@ groupdel nas_shares
 
 # Create a user with a UID, and add it to a GID
 useradd lxc_docker -u 1000 -g 1000 -m -s /bin/bash
+
+# Add a user to a group
+usermod -a -G nas_shares docker
 
 # Delete a user
 deluser nas_root
@@ -294,77 +299,20 @@ Start [here](https://wiki.joeplaa.com/en/tutorials/how-to-install-and-configure-
 
 ## Docker & Docker Compose
 
+Install
+
+```
+apt install docker.io
+systemctl start docker
+
+# Portainer
+docker run -d -p 8000:8000 -p 9000:9000 -p 9443:9443 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+
+```
+
+Or, [For Dockge](https://github.com/louislam/dockge)
+
+
 To run at boot `rc-update add docker boot`
 
 See [this guide](https://collabnix.com/how-to-install-the-latest-version-of-docker-compose-on-alpine-linuxin-2022/)
-
-
-## NAS (Don't do this anymore)
-
-Install TrueNAS on VM
-
-### Passthrough (Don't do this anymore)
-
-PassThrough Devices ([Guide](https://pve.proxmox.com/wiki/Passthrough_Physical_Disk_to_Virtual_Machine_(VM)) and [video](https://www.youtube.com/watch?v=MkK-9_-2oko))
-
-| Name     | Serial          | Serial ID                                   |
-| -------- | --------------- | ------------------------------------------- |
-| /dev/sda | S6PNNS0W105328K | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K |
-| /dev/sdb | S6PNNS0W105332H | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H |
-| /dev/sdc | S6PNNS0W105404L | ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L |
-
-```
-scsi1: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105328K,size=1953514584K,serial=S6PNNS0W105328K
-scsi2: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105332H,size=1953514584K,serial=S6PNNS0W105332H
-scsi3: /dev/disk/by-id/ata-Samsung_SSD_870_EVO_2TB_S6PNNS0W105404L,size=1953514584K,serial=S6PNNS0W105404L
-```
-
-
-### Mount Shares
-
-For VPN the LXC needs this in .conf
-
-```
-lxc.cgroup.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
-```
-
-
-**In the LXC (as root)**
-```
-groupadd -g 10000 nas_shares
-
-# Different apps use different users, e.g. docker, plex, jellyfin
-usermod -aG lxc_shares USERNAME
-```
-
-Shutdown the LXC
-
-**On THe PVE Host**
-
-```
-mkdir -p /mnt/lxc_shares/NAS_NAME
-
-Update `/etc/fstab`
-
-```
-//192.168.0.11/nas/ /mnt/lxc_shares/nas cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
-//192.168.0.11/media/ /mnt/lxc_shares/nas_media cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0770,file_mode=0770,user=media,pass=ijustwantmedia 0 0
-//192.168.0.11/media_root/ /mnt/lxc_shares/nas_media_root cifs _netdev,x-systemd.automount,noatime,uid=100000,gid=110000,dir_mode=0777,file_mode=0777,user=media,pass=ijustwantmedia 0 0
-```
-
-then `systemctl daemon-reload`
-
-# Update the LXC_ID
-{ echo 'mp0: /mnt/lxc_shares/NAS_NAME/,mp=/mnt/nas' ; } | tee -a /etc/pve/lxc/LXC_ID.conf
-
-```
-
-LXC maybe needs additional commands
-```
-adduser --disabled-password --gecos "" --home "$(pwd)" --ingroup "docker" --no-create-home --uid "1000" "docker"
-```
-
-Restart the LXC
-
-Docker needs to use this user for the binds to work.
