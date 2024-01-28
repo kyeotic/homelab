@@ -302,6 +302,8 @@ Start [here](https://wiki.joeplaa.com/en/tutorials/how-to-install-and-configure-
 Install
 
 ```
+# The official version (25.1) has issues on debian
+# The deb packaged one is 20.10 and currently works better
 apt install docker.io
 systemctl start docker
 
