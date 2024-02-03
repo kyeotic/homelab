@@ -29,6 +29,7 @@ services:
       - "8388:8388/tcp"                         # Gluetun Local Network Shadowsocks
       - "8388:8388/udp"                         # Gluetun Local Network Shadowsocks
       - "${WEBUI_PORT_QBITTORRENT:?err}:${WEBUI_PORT_QBITTORRENT:?err}"   # WebUI Portal: qBittorrent
+      - "${WEBUI_PORT_TRANSMISSION:?err}:${WEBUI_PORT_TRANSMISSION:?err}"   # WebUI Portal: qBittorrent
       - "${QBIT_PORT_TCP:?err}:6881/tcp"        # Transmission Torrent Port TCP
       - "${QBIT_PORT_UDP:?err}:6881/udp"        # Transmission Torrent Port UDP
 
@@ -90,6 +91,32 @@ services:
 ## qBittorrent MUST always use a VPN / Secure Internet connection
 
     network_mode: "service:gluetun"
+
+###########################################################################
+##  Docker Compose File:  transmission (LinuxServer.io)
+##  Function:             Torrent Download Client
+##  Documentation:        https://docs.linuxserver.io/images/docker-transmission/
+###########################################################################
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - USER=admin
+      - PASS=${TRANSMISSION_PASSWORD:?err}
+    volumes:
+      # - /srv/transmission/transmission:/config
+      - ${FOLDER_FOR_CONFIGS:?err}/transmission:/config
+      - ${FOLDER_FOR_MEDIA:?err}/torrents/:/downloads
+    healthcheck:
+      disable: true
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    restart: unless-stopped
 
 ###########################################################################
 ##  Docker Compose File:  SABnzbd (LinuxServer.io)
