@@ -318,3 +318,8 @@ Or, [For Dockge](https://github.com/louislam/dockge)
 To run at boot `rc-update add docker boot`
 
 See [this guide](https://collabnix.com/how-to-install-the-latest-version-of-docker-compose-on-alpine-linuxin-2022/)
+
+## Backup Server
+
+* See [this guide](https://tultr.com/install-proxmox-backup-server-2-on-an-lxc-container/) for installation on LCV
+* Then [this guide](https://4sysops.com/archives/proxmox-backup-server-install-and-configure/#rtoc-3) for making backups

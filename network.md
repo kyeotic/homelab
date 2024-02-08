@@ -23,6 +23,7 @@ This document details the network design for the homelab.
 | PiHole    | 192.168.0.16  | Pi Hole DNS Blocker          |
 | AdGuard   | 192.168.0.17  | Pi Hole DNS Blocker          |
 | VPN       | 192.168.0.18  | Tailscale Router             |
+| PBS       | 192.168.0.19  | Proxmox Backup Server        |
 | Portainer | 192.168.0.20  | Docker and Portainer         |
 | Mealie    | 192.168.0.21  | Mealie                       |
 | Games     | 192.168.0.25  | Game Server LXC              |
