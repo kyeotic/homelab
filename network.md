@@ -16,7 +16,7 @@ This document details the network design for the homelab.
 | Gateway   | 192.168.0.1   | Primary Gateway              |
 | Printer   | 192.168.0.9   | Brother Printer              |
 | Proxmox   | 192.168.0.10  | Promox Server                |
-| TrueNAS   | 192.168.0.11  | TrueNAS Server               |
+| Kye-NAS   | 192.168.0.11  | Cockpit NAS Server           |
 | nginx     | 192.168.0.12  | Proxmox NGINX                |
 | Plex      | 192.168.0.14  | Plex                         |
 | HOAS      | 192.168.0.15  | Home Assistant OS            |
