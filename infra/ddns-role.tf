@@ -27,6 +27,7 @@ data "aws_iam_policy_document" "ddns" {
 
   statement {
     actions = [
+      "route53:ListHostedZonesByName",
       "route53:ListHostedZones",
       "route53:GetChange"
     ]

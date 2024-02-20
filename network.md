@@ -16,8 +16,9 @@ This document details the network design for the homelab.
 | Gateway   | 192.168.0.1   | Primary Gateway              |
 | Printer   | 192.168.0.9   | Brother Printer              |
 | Proxmox   | 192.168.0.10  | Promox Server                |
-| Kye-NAS   | 192.168.0.11  | Cockpit NAS Server           |
-| nginx     | 192.168.0.12  | Proxmox NGINX                |
+| NAS       | 192.168.0.11  | Cockpit NAS/SMB Server       |
+| nginx     | 192.168.0.12  | NGINX (Deprecated for caddy) |
+| caddy     | 192.168.0.13  | Caddy (Reverse Proxy)        |
 | Plex      | 192.168.0.14  | Plex                         |
 | HOAS      | 192.168.0.15  | Home Assistant OS            |
 | PiHole    | 192.168.0.16  | Pi Hole DNS Blocker          |

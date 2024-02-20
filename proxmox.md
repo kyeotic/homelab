@@ -96,6 +96,8 @@ The Nginx proxy path must also have *Websocket Support* Enabled.
 
 Create or import the zfs pool. [This video](https://www.youtube.com/watch?v=oSD-VoloQag) can with creation.
 
+### Host Setup
+
 On the host we will map
 uid: 101000 (maps to LXC 1000)
 gid: 110000 (maps to LXC 10000)
@@ -124,6 +126,8 @@ pct set 110 -mp1 /tank/nas/game-saves,mp=/mnt/game-saves
 ```
 
 User perms still follow [this idea](https://forum.proxmox.com/threads/tutorial-unprivileged-lxcs-mount-cifs-shares.101795/)
+
+### LXC Setup
 
 1. 
 ```

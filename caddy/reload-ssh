@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Push the Caddyfile over SSH and reload the docker config
+
+scp Caddyfile root@192.168.0.13:/root/caddy/Caddyfile
+ssh root@192.168.0.13 "(cd /root/caddy && ./reload)"
