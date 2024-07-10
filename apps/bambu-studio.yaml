@@ -1,0 +1,21 @@
+services:
+  bambustudio:
+    image: lscr.io/linuxserver/bambustudio:latest
+    container_name: bambustudio
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=10000
+      - TZ=America/Los_Angeles
+      - DRINODE=/dev/dri/renderD128
+      - TITLE=Kybu
+    volumes:
+      - /path/to/config:/config
+      - /mnt/app_config/bambustudio:/config
+    ports:
+      - 3000:3000
+      - 3001:3001
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri
