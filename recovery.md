@@ -14,7 +14,7 @@ The plan to avoid this in the future is
    1. PBS Backup
    2. App configuration
 
-Once all these are done, run the following tests to ensure preparedness:
+Once all these are done, run the following tests to ensure preparedness. First,  a VM first, so that the real OS or pool are not lost, and second on the actual server.
   - [ ] Deleting the pool and restoring from
     - [ ] OS HDD app config backup
     - [ ] a cloud backup
@@ -23,5 +23,7 @@ Once all these are done, run the following tests to ensure preparedness:
     - [ ] gaming backup
     - [ ] cloud backup
   - [ ] Formatting a disk and resilvering with ZFS
+
+If possible, include, in all these backups, which servarr collections you were subscribed to, so that externally available sources can refill the part of the pool that you aren't backing up: media content.
 
 The ultimate goal is to ensure all data that cannot be downloaded from HA available sources, like usenet or linux iso repositories, is backed up to two internal sources and one external source. The 3:2:1 rule. You should be past these kinds of failures. Be prepared.
