@@ -1,14 +1,11 @@
 services:
   caddy:
-    # image: caddy-dns:latest
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: kyeotic/caddy-route53:latest
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data

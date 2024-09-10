@@ -1,5 +1,3 @@
-version: "3.8"
-
 networks:
   media-network:
     name: media-network
@@ -97,26 +95,28 @@ services:
 ##  Function:             Torrent Download Client
 ##  Documentation:        https://docs.linuxserver.io/images/docker-transmission/
 ###########################################################################
-  transmission:
-    image: lscr.io/linuxserver/transmission:latest
-    container_name: transmission
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-      - USER=admin
-      - PASS=${TRANSMISSION_PASSWORD:?err}
-    volumes:
-      # - /srv/transmission/transmission:/config
-      - ${FOLDER_FOR_CONFIGS:?err}/transmission:/config
-      - ${FOLDER_FOR_MEDIA:?err}/torrents/:/downloads
-    healthcheck:
-      disable: true
-    depends_on:
-      - gluetun
-    network_mode: "service:gluetun"
-    restart: unless-stopped
+  # transmission:
+  #   image: lscr.io/linuxserver/transmission:latest
+  #   container_name: transmission
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - USER=admin
+  #     - PASS=${TRANSMISSION_PASSWORD:?err}
+  #     - TRANSMISSION_DOWNLOAD_DIR=/downloads/complete
+  #     - TRANSMISSION_INCOMPLETE_DIR=/downloads/incomplete
+  #   volumes:
+  #     # - /srv/transmission/transmission:/config
+  #     - ${FOLDER_FOR_CONFIGS:?err}/transmission:/config
+  #     - ${FOLDER_FOR_MEDIA:?err}/torrents/:/downloads
+  #   healthcheck:
+  #     disable: true
+  #   depends_on:
+  #     - gluetun
+  #   network_mode: "service:gluetun"
+  #   restart: unless-stopped
 
 ###########################################################################
 ##  Docker Compose File:  SABnzbd (LinuxServer.io)

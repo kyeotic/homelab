@@ -65,7 +65,13 @@ Then on LXC
 ```
 
 # Install Tailscale on Alpine Linux
-apk add tailscale
+apt update
+apt install curl
+
+curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
+apt update
+apt install tailscale
 
 # Use OpenRC to enable and start the service
 
@@ -90,9 +96,6 @@ Remote access is handled with [TailScale's Subnet Router](https://tailscale.com/
 echo 'net.ipv4.ip_forward = 1' | tee -a /etc/sysctl.d/99-tailscale.conf
 echo 'net.ipv6.conf.all.forwarding = 1' | tee -a /etc/sysctl.d/99-tailscale.conf
 sysctl -p /etc/sysctl.d/99-tailscale.conf
-
-rc-update add sysctl
-rc-service systcl restart
 
 tailscale up --advertise-routes=192.168.0.0/24
 ```

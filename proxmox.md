@@ -15,10 +15,11 @@
 
 ## Current Server Specs
 
-| Component | Spec                       |
-| --------- | -------------------------- |
-| CPU       | AMD Ryzen 6-core 12-Thread |
-| RAM       | 96BG DDR5 5200mhz          |
+| Component   | Spec                       |
+| ----------- | -------------------------- |
+| CPU         | AMD Ryzen 6-core 12-Thread |
+| RAM         | 96BG DDR5 5200mhz          |
+| Motherboard | Gigabyte A620I AX          |
 
 ## Initial Setup
 
@@ -50,32 +51,14 @@ Run the following commands
     /sbin/iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8006
     # install iptables-persistent
     apt install iptables-persistent -y
-    When prompted, select Yes to save current IPv4 rules > Press Enter
-    When prompted, select Yes to save current IPv6 rules > Press Enter
-    Open a web browser and navigate to https://DNSorIP to verify the 443 to 8006 redirect is working
-    Reboot the ProxMox host
-    Once the host has rebooted, test that the web UI is still reachable without specifying the port (:8006)
 ```
 
-## PiHole
 
-To exlude a device go to **Clients** > **Add** (MAC Address),  then set **Group Assignment** to **none**
-
-## Nginx
-
-Using [this guide](https://medium.com/@denzity/ssl-certificates-for-proxmox-using-aws-route53-the-easy-way-e8dfe0b0dbfa)
-
-Required adding the route53 plugin to LXC Install, using [this fork](https://github.com/kyeotic/Proxmox/blob/main/ct/nginxproxymanager.sh).
-
-```
-bash -c "$(wget -qLO - https://raw.githubusercontent.com/kyeotic/Proxmox/main/ct/nginxproxymanager.sh)"
-```
-
-This still didn't work, so I opened a LXC Console and ran
-
-```
-python3 -m pip install --no-cache-dir certbot-dns-route53
-```
+- When prompted, select Yes to save current IPv4 rules > Press Enter
+- When prompted, select Yes to save current IPv6 rules > Press Enter
+- Open a web browser and navigate to https://DNSorIP to verify the 443 to 8006 redirect is working
+- Reboot the ProxMox host
+- Once the host has rebooted, test that the web UI is still reachable without specifying the port (:8006)
 
 ### Home Assistant
 
@@ -153,6 +136,10 @@ lxc.cgroup2.devices.allow: c 235:* rwm
 lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
 lxc.mount.entry: /dev/dri/renderD128 dev/renderD128 none bind,optional,create=file
 lxc.mount.entry: /dev/kfd dev/kfd none bind,optional,create=file
+
+# Needed for Net Mgmt
+lxc.cgroup2.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net dev/net none bind,create=dir
 ```
 
 On Host Shell
@@ -237,8 +224,6 @@ apt install cockpit --no-install-recommends
 # comment out root
 nano /etc/cockpit/disallowed-users
 ```
-Allow reverse proxy: `nano /etc/cockpit/cockpit.conf`
-
 
 Installing sidecards, back in the shell
 ```
@@ -256,26 +241,8 @@ Origins = https://cockpit.local.kye.dev wss://cockpit.local.kye.dev
 ProtocolHeader = X-Forwarded-Proto
 ```
 
-Then the Nginx proxy config needs this in advanced
+Then Add to the reverse proxy
 
-```
-location / {
-        # Required to proxy the connection to Cockpit
-        proxy_pass https://192.168.0.11:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # Required for web sockets to function
-        proxy_http_version 1.1;
-        proxy_buffering off;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-
-        # Pass ETag header from Cockpit to clients.
-        # See: https://github.com/cockpit-project/cockpit/issues/5239
-        gzip off;
-    }
-```
 
 Restart with `systemctl restart cockpit.service`
 
@@ -327,3 +294,19 @@ See [this guide](https://collabnix.com/how-to-install-the-latest-version-of-dock
 
 * See [this guide](https://tultr.com/install-proxmox-backup-server-2-on-an-lxc-container/) for installation on LCV
 * Then [this guide](https://4sysops.com/archives/proxmox-backup-server-install-and-configure/#rtoc-3) for making backups
+
+
+### Backups with Restic
+
+First install
+```
+apt install restic
+```
+
+## Nested Virtualization Support
+
+Check for support first
+```
+root@homelab:~# cat /sys/module/kvm_amd/parameters/nested 
+1 #must not return 0 OR N
+```
