@@ -1,9 +1,13 @@
-- name: My first play
+- name: Configure
   hosts: proxmox
   tasks:
-   - name: Ping my hosts
-     ansible.builtin.ping:
+    - name: sync restic profile
+      synchronize:
+        src: ../restic/restic.yaml
+        dest: /root/profiles.yaml
+  #  - name: Ping my hosts
+  #    ansible.builtin.ping:
 
-   - name: Print message
-     ansible.builtin.debug:
-      msg: Hello world
+  #  - name: Print message
+  #    ansible.builtin.debug:
+  #     msg: Hello world

@@ -1,0 +1,27 @@
+version: "1"
+
+default:
+  repository: "rest:https://sd9j6dod:X23NkZv6sobxuAND@sd9j6dod.repo.borgbase.com"
+  password-file: "~/restic-password"
+
+  backup:
+    verbose: true
+    source:
+      - "/var/lib/vz/dump"
+      - "/tank/nas"
+      - "/tank/apps"
+    schedule: "Mon, 04:00"
+    retention:
+      before-backup: false
+      after-backup: true
+      keep-last: 3
+      prune: false
+      # tag can be a boolean ('true' meaning to copy tag set from 'backup') 
+      # or a custom set of tags.
+      # Default is 'false', meaning that tags are NOT used.
+      tag: false
+      # only consider snapshots for this host
+      # (can be specified multiple times) (default: $RESTIC_HOST).
+      # Boolean true is replaced with the hostname that applies in section “backup”.
+      # Defaults to true for config version 2 in “retention”. Examples: true, false, "host"
+      host: true

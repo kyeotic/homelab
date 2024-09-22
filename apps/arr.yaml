@@ -313,6 +313,29 @@ services:
     networks:
       - media-network
 
+
+###########################################################################
+##  Docker Compose File:  recyclarr
+##  Function:             TRaSH Guide Syncing
+##  Documentation:        https://recyclarr.dev/wiki/installation/docker/
+###########################################################################
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr
+    container_name: recyclarr
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/recyclarr:/config
+    ports:
+      - "${WEBUI_PORT_RECYCLARR:?err}:8989"
+    user: ${PUID:?err}:${PGID:?err}
+    environment:
+      # - PUID=${PUID:?err}
+      # - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+      - RECYCLARR_CREATE_CONFIG=true
+    networks:
+      - media-network
+
 ###########################################################################
 ##  Docker Compose File:  Flaresolverr (Flaresolverr)
 ##  Function:             Cloudflare Proxy Server
