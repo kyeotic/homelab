@@ -1,32 +1,27 @@
----
-version: "3.7"
 services:
-  mealie-omni:
-    image: hkotel/mealie:omni-nightly
-    container_name: mealie
-    volumes:
-      - mealie-data:/app/data/
-    ports:
-      - 9925:80
-      - "3000:3000"
-      - "9000:9000"
-    environment:
-      - ALLOW_SIGNUP=true
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Los_Angeles
-      - BASE_URL=https://food.local.kye.dev
-      - DEFAULT_EMAIL=changeme@example.com
-      - DEFAULT_PASSWORD=MyPassword
-      - SMTP_HOST=smtp.mailbox.org
-      - SMTP_PORT=587
-      - SMTP_FROM_NAME=Mealie Recipe Administrator
-      - SMTP_AUTH_STRATEGY=SSL
-      - SMTP_FROM_EMAIL=mealie.admin@kye.dev
-      - SMTP_USER=tim@kye.dev
-      - SMTP_PASSWORD=__YOUR_SMPT_PASSWORD__
-    restart: always
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v1.12.0
 
-volumes:
-  mealie-data:
-    driver: local
+    container_name: mealie
+    restart: always
+    ports:
+        - "3100:9000"
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/mealie:/app/data
+    environment:
+      # Set Backend ENV Variables Here
+      ALLOW_SIGNUP: "false"
+      PUID: ${PUID:?err}
+      PGID: ${PGID:?err}
+      TZ: ${TIMEZONE:?err}
+      MAX_WORKERS: 1
+      WEB_CONCURRENCY: 1
+      BASE_URL: https://food.local.kye.dev
+      SMTP_FROM_EMAIL: mealie.admin@kye.dev
+      SMTP_HOST: smtp.mailbox.org
+      SMTP_USER: tim@kye.dev
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?err}

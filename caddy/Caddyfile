@@ -23,7 +23,7 @@
 
 	@food host food.local.kye.dev
 	handle @food {
-		reverse_proxy 192.168.0.21:3000
+		reverse_proxy 192.168.0.20:3100
 	}
 
 	@gstudio host gstudio.local.kye.dev

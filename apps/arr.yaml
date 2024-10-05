@@ -30,7 +30,8 @@ services:
       - "${WEBUI_PORT_TRANSMISSION:?err}:${WEBUI_PORT_TRANSMISSION:?err}"   # WebUI Portal: qBittorrent
       - "${QBIT_PORT_TCP:?err}:6881/tcp"        # Transmission Torrent Port TCP
       - "${QBIT_PORT_UDP:?err}:6881/udp"        # Transmission Torrent Port UDP
-
+      - "3000:3000/tcp" # firefox
+      - "3001:3001/tcp" # firefox
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/gluetun:/gluetun
     environment:
@@ -414,3 +415,19 @@ services:
     security_opt:
       - no-new-privileges:true
     network_mode: none
+
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+      - FIREFOX_CLI=https://www.linuxserver.io/ #optional
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
+    shm_size: "1gb"
+    restart: unless-stopped
+    network_mode: "service:gluetun"
