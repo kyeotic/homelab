@@ -314,29 +314,6 @@ services:
     networks:
       - media-network
 
-
-###########################################################################
-##  Docker Compose File:  recyclarr
-##  Function:             TRaSH Guide Syncing
-##  Documentation:        https://recyclarr.dev/wiki/installation/docker/
-###########################################################################
-  recyclarr:
-    image: ghcr.io/recyclarr/recyclarr
-    container_name: recyclarr
-    restart: unless-stopped
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/recyclarr:/config
-    ports:
-      - "${WEBUI_PORT_RECYCLARR:?err}:8989"
-    user: ${PUID:?err}:${PGID:?err}
-    environment:
-      # - PUID=${PUID:?err}
-      # - PGID=${PGID:?err}
-      - TZ=${TIMEZONE:?err}
-      - RECYCLARR_CREATE_CONFIG=true
-    networks:
-      - media-network
-
 ###########################################################################
 ##  Docker Compose File:  Flaresolverr (Flaresolverr)
 ##  Function:             Cloudflare Proxy Server
@@ -416,18 +393,64 @@ services:
       - no-new-privileges:true
     network_mode: none
 
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
-    security_opt:
-      - seccomp:unconfined #optional
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - TZ=${TIMEZONE:?err}
-      - FIREFOX_CLI=https://www.linuxserver.io/ #optional
+###########################################################################
+##  Docker Compose File:  Recyclarr
+##  Function:             synchronize recommended settings from the TRaSH guides
+##  Documentation:        https://recyclarr.dev/wiki/
+###########################################################################
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr
+    container_name: recyclarr
+    user: ${PUID:?err}:${PGID:?err}
+    networks:
+      - media-network
     volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
-    shm_size: "1gb"
-    restart: unless-stopped
-    network_mode: "service:gluetun"
+      - ${FOLDER_FOR_CONFIGS:?err}/recyclarr:/config
+    # read_only: true # <-- Add this to enable read-only mode
+    tmpfs: /tmp # <-- Mount /tmp to a volume
+    environment:
+      - TZ=${TIMEZONE:?err}
+      # Sonarr Config - Copy API Key from: http://sonarr:8989/general/settings
+      - SONARR_URL=http://sonarr:8989
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      # Radarr Config - Copy API Key from: http://radarr:7878/general/settings
+      - RADARR_URL=http://radarr:7878
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - RECYCLARR_CREATE_CONFIG=true
+
+
+  # tdarr:
+  #   container_name: tdarr
+  #   image: ghcr.io/haveagitgat/tdarr:latest
+  #   restart: unless-stopped
+  #   network_mode: bridge
+  #   environment:
+  #     - UMASK_SET=002
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK_SET=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - nodeID=ReduxNode
+  #     - serverIP=0.0.0.0
+  #     - serverPort=8266
+  #     - webUIPort=8265
+  #     - internalNode=true
+  #     - inContainer=true
+  #   ports:
+  #     - 8265:8265 # webUI port
+  #     - 8266:8266 # server port
+  #     - 8267:8267 # Internal node port
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr:/app/configs
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr-server:/app/server
+  #     - ${FOLDER_FOR_MEDIA:?err}:/data
+
+  #     - /mnt/docker/tdarr_node/server:/app/server
+  #     - ${FOLDER_FOR_CONFIGS:?err}/tdarr:/app/configs
+  #     - /mnt/docker/tdarr/logs:/app/logs
+  #     - ${FOLDER_FOR_MEDIA:?err}:/main_media
+  #     - /mnt/nfs/tower/video:/tower_media
+  #     - /mnt/nfs/bunker/arch:/bunker_arch
+  #     - /mnt/smb/redux/transcode/tdarr:/temp
+  #   devices:
+  #     - /dev/dri:/dev/dri
