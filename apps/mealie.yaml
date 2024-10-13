@@ -20,7 +20,7 @@ services:
       TZ: ${TIMEZONE:?err}
       MAX_WORKERS: 1
       WEB_CONCURRENCY: 1
-      BASE_URL: https://food.local.kye.dev
+      BASE_URL: https://cook.local.kye.dev
       SMTP_FROM_EMAIL: mealie.admin@kye.dev
       SMTP_HOST: smtp.mailbox.org
       SMTP_USER: tim@kye.dev

@@ -21,8 +21,8 @@
 		reverse_proxy 192.168.0.11:9090
 	}
 
-	@food host food.local.kye.dev
-	handle @food {
+	@cook host cook.local.kye.dev
+	handle @cook {
 		reverse_proxy 192.168.0.20:3100
 	}
 

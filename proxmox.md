@@ -9,7 +9,7 @@
 | Home Assistant | LXC  | 192.168.0.15 | homeassistant.local.kye.dev                       |
 | Nginx          | LXC  | 192.168.0.12 | nginx.local.kye.dev                               |
 | PiHole         | LXC  | 192.168.0.17 | http://192.168.0.17/admin/login.php               |
-| Mealie         | LXC  | 192.168.0.21 | food.local.kye.dev                                |
+| Mealie         | LXC  | 192.168.0.21 | cook.local.kye.dev                                |
 | DDns           | LXC  | DHCP         | https://crazymax.dev/ddns-route53/install/docker/ |
 
 
