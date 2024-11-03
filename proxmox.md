@@ -62,17 +62,7 @@ Run the following commands
 
 ### Home Assistant
 
-To get home assistant working the `/var/lib/docker/volumes/hass_config/_data/configurations.yaml` needs this. (Easily edit with ssh by [enabling it](https://github.com/tteck/Proxmox/discussions/385#discussioncomment-3283416))
-
-```
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 127.0.0.1
-    - 192.168.0.12
-```
-
-The Nginx proxy path must also have *Websocket Support* Enabled.
+See [Home Assisstant](./hoas.md)
 
 
 ## ZFS on Proxmox Directly
