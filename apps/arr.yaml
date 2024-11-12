@@ -12,10 +12,11 @@ networks:
 ##  Docker Compose File:    Gluetun (qmcgaw)
 ##  Function:               VPN Client
 ##  Documentation:          https://github.com/qdm12/gluetun-wiki
+##  Dockerhub:              https://hub.docker.com/r/qmcgaw/gluetun
 ###########################################################################
 services:
   gluetun:
-    image: qmcgaw/gluetun:v3.35.0
+    image: qmcgaw/gluetun:v3.39
     container_name: gluetun
     restart: always
     cap_add:
@@ -68,7 +69,7 @@ services:
 ##  Documentation:        https://docs.linuxserver.io/images/docker-qbittorrent
 ###########################################################################
   qbittorrent:
-    image: linuxserver/qbittorrent:4.6.0
+    image: linuxserver/qbittorrent:5.0.1
     container_name: qbittorrent
     restart: unless-stopped
     volumes:
