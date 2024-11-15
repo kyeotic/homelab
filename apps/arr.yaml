@@ -29,34 +29,48 @@ services:
       - "8388:8388/udp"                         # Gluetun Local Network Shadowsocks
       - "${WEBUI_PORT_QBITTORRENT:?err}:${WEBUI_PORT_QBITTORRENT:?err}"   # WebUI Portal: qBittorrent
       - "${WEBUI_PORT_TRANSMISSION:?err}:${WEBUI_PORT_TRANSMISSION:?err}"   # WebUI Portal: qBittorrent
-      - "${QBIT_PORT_TCP:?err}:6881/tcp"        # Transmission Torrent Port TCP
-      - "${QBIT_PORT_UDP:?err}:6881/udp"        # Transmission Torrent Port UDP
+      # - "${QBIT_PORT_TCP:?err}:6881/tcp"        # Transmission Torrent Port TCP
+      # - "${QBIT_PORT_UDP:?err}:6881/udp"        # Transmission Torrent Port UDP
       - "3000:3000/tcp" # firefox
       - "3001:3001/tcp" # firefox
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/gluetun:/gluetun
+    healthcheck:
+      test: ping -c 1 www.google.com || exit 1
+      interval: 60s
+      timeout: 20s
+      retries: 5
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
+      - VPN_TYPE=${VPN_TYPE}
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER:?err}
-      # - OPENVPN_USER=${VPN_USERNAME}
-      # - OPENVPN_PASSWORD=${VPN_PASSWORD}
-      - SERVER_REGIONS=${SERVER_REGIONS:?err}
+      - OPENVPN_USER=${VPN_USERNAME}
+      - OPENVPN_PASSWORD=${VPN_PASSWORD}
+      - SERVER_REGIONS=${SERVER_REGIONS}
+      - SERVER_NAMES=${SERVER_NAMES}
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
       - SERVER_CITIES=${SERVER_CITIES}
       - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
       - FIREWALL_OUTBOUND_SUBNETS=${LOCAL_SUBNET:?err}
-      - OPENVPN_CUSTOM_CONFIG=${OPENVPN_CUSTOM_CONFIG}
-      - VPN_TYPE=${VPN_TYPE}
-      - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}
-      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}
-      - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
-      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      # - OPENVPN_CUSTOM_CONFIG=${OPENVPN_CUSTOM_CONFIG}
+      # - WIREGUARD_ENDPOINT_IP=${VPN_ENDPOINT_IP}
+      # - WIREGUARD_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}
+      # - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
+      # - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      # - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      # - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
       - HTTPPROXY=on
       - SHADOWSOCKS=on
+      - UPDATER_PERIOD=24h
+      - PORT_FORWARD_ONLY=true
+      - VPN_PORT_FORWARDING=true
+      - VPN_PORT_FORWARDING_STATUS_FILE=/gluetun/forwarded_port
+      # - VPN_PORT_FORWARDING_PROVIDER=${VPN_PORT_FORWARDING_PROVIDER:?err}
+      # - VPN_PORT_FORWARDING_USERNAME=${VPN_USERNAME}
+      # - VPN_PORT_FORWARDING_PASSWORD=${VPN_PASSWORD}
+
 
 # NOTE: Gluetun VPN container MUST ONLY connect to the media-network
 
@@ -67,9 +81,10 @@ services:
 ##  Docker Compose File:  qBittorrent (LinuxServer.io)
 ##  Function:             Torrent Download Client
 ##  Documentation:        https://docs.linuxserver.io/images/docker-qbittorrent
+##  Trackers:             https://github.com/ngosang/trackerslist/blob/master/trackers_all.txt
 ###########################################################################
   qbittorrent:
-    image: linuxserver/qbittorrent:5.0.1
+    image: linuxserver/qbittorrent:5.0.1-libtorrentv1
     container_name: qbittorrent
     restart: unless-stopped
     volumes:
@@ -91,6 +106,41 @@ services:
 ## qBittorrent MUST always use a VPN / Secure Internet connection
 
     network_mode: "service:gluetun"
+
+###########################################################################
+##  Docker Compose File:  qbittorrent port forwarder
+##  Function:             automatically update qbittorrent with the gluetun port-forward value
+##  Documentation:        https://github.com/DoAndroids/vpn_downloads/blob/main/docker-compose.yml
+###########################################################################
+  qbittorrent-port:
+    image: charlocharlie/qbittorrent-port-forward-file:latest
+    network_mode: "service:gluetun"
+    container_name: gluetun-qbittorrent-portfw
+    environment:
+      - QBT_USERNAME=${QBT_USER}
+      - QBT_PASSWORD=${QBT_PASS}
+      - QBT_ADDR=http://localhost:${WEBUI_PORT_QBITTORRENT}
+      - PORT_FILE=/config/gluetun/forwarded_port
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/:/config:ro
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+      - gluetun
+
+###########################################################################
+##  Docker Compose File:  qbittools
+##  Function:             automatically run a 'reannounce' job on qBittorrent (for stalled torrents)
+##  Documentation:        https://github.com/DoAndroids/vpn_downloads/blob/main/docker-compose.yml
+###########################################################################
+  qbittools:
+    image: registry.gitlab.com/alexkm/qbittools
+    network_mode: "service:gluetun"
+    container_name: qbittools
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/qbittorrent/config:/qBittorrent
+    command: reannounce -C /qBittorrent/qBittorrent.conf
+    restart: unless-stopped
 
 ###########################################################################
 ##  Docker Compose File:  transmission (LinuxServer.io)
