@@ -10,7 +10,7 @@ default:
       - "/var/lib/vz/dump"
       - "/tank/nas"
       - "/tank/apps"
-      - "/tank/media_root/music"
+      - "/tank/media_root/media/music"
     schedule: "Mon, 04:00"
     forget:
       keep-last: 3

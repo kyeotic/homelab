@@ -86,6 +86,10 @@ useradd nas -u 101000 -g 110000 -m -s /bin/bash
 chown -R nas:nas_shares /tank/apps/
 chown -R nas:nas_shares /tank/media_root/
 chown -R nas:nas_shares /tank/nas
+
+
+# set recursive acl
+setfacl -Rm g:nas_shares:rwx /tank/media_root/
 ```
 
 For each LXC that needs a mount
