@@ -33,6 +33,7 @@ services:
       # - "${QBIT_PORT_UDP:?err}:6881/udp"        # Transmission Torrent Port UDP
       - "3000:3000/tcp" # firefox
       - "3001:3001/tcp" # firefox
+      - "6500:6500" #rdt
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/gluetun:/gluetun
     healthcheck:
@@ -468,7 +469,30 @@ services:
       - RADARR_URL=http://radarr:7878
       - RADARR_API_KEY=${RADARR_API_KEY}
       - RECYCLARR_CREATE_CONFIG=true
-
+###########################################################################
+##  Docker Compose File:  rdt-client
+##  Function:             Debrid download client
+##  Documentation:        https://github.com/rogerfar/rdt-client/blob/master/README-DOCKER.md
+###########################################################################
+  rdtclient:
+    image: rogerfar/rdtclient
+    container_name: rdtclient
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/rdtclient:/data/db
+      - ${FOLDER_FOR_MEDIA:?err}/torrents/:/data/downloads
+    logging:
+       driver: json-file
+       options:
+          max-size: 10m
+    # ports:
+    #   - 6500:6500
+    restart: unless-stopped
+    network_mode: "service:gluetun"
 
   # tdarr:
   #   container_name: tdarr

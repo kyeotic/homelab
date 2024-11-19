@@ -1,6 +1,0 @@
-#!/bin/bash
-set -ex
-
-_scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-deno run -A $_scripts/cloud-init.ts

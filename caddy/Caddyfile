@@ -104,4 +104,9 @@
 	handle @tv {
 		reverse_proxy 192.168.0.20:8989
 	}
+
+	@debrid host debrid.local.kye.dev
+	handle @debrid {
+		reverse_proxy 192.168.0.20:6500
+	}
 }
