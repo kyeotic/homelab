@@ -25,3 +25,5 @@ The Nginx proxy path must also have *Websocket Support* Enabled.
 ## Plugins
 
 - Studio Code Server
+- AirSonos
+- Matter Server

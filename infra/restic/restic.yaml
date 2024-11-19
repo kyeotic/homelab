@@ -10,12 +10,16 @@ default:
       - "/var/lib/vz/dump"
       - "/tank/nas"
       - "/tank/apps"
+      - "/tank/media_root/music"
     schedule: "Mon, 04:00"
+    forget:
+      keep-last: 3
+      prune: true
     retention:
       before-backup: false
       after-backup: true
       keep-last: 3
-      prune: false
+      prune: true
       # tag can be a boolean ('true' meaning to copy tag set from 'backup') 
       # or a custom set of tags.
       # Default is 'false', meaning that tags are NOT used.
