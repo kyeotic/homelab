@@ -109,4 +109,14 @@
 	handle @debrid {
 		reverse_proxy 192.168.0.20:6500
 	}
+
+	@reader host reader.local.kye.dev
+	handle @reader {
+		reverse_proxy 192.168.0.20:8787
+	}
+
+	@audiobooks host audiobooks.local.kye.dev
+	handle @audiobooks {
+		reverse_proxy 192.168.0.20:13378
+	}
 }

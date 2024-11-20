@@ -386,6 +386,47 @@ services:
       - media-network
 
 ###########################################################################
+##  Docker Compose File:  Readarr (LinuxServer.io)
+##  Function:             eBooks Library Manager
+##  Documentation:        https://docs.linuxserver.io/images/docker-readarr
+###########################################################################
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/readarr:/config
+      - ${FOLDER_FOR_MEDIA:?err}:/data
+    ports:
+      - "${WEBUI_PORT_READARR:?err}:8787"
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+      - DOCKER_MODS=ghcr.io/gilbn/theme.park:readarr
+      - TP_THEME=${TP_THEME:?err}
+    networks:
+      - media-network
+
+###########################################################################
+##  Docker Compose File:  audiobookshelf (LinuxServer.io)
+##  Function:             Audio Books UI
+##  Documentation:        https://www.audiobookshelf.org/docs/#docker-compose-install
+###########################################################################
+  audiobookshelf:
+    container_name: audiobookshelf
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    ports:
+      - 13378:80
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/audiobookshelf:/config
+      - ${FOLDER_FOR_MEDIA:?err}/media/reading/audiobooks:/audiobooks
+      - ${FOLDER_FOR_MEDIA:?err}/media/podcasts:/podcasts
+      - ${FOLDER_FOR_MEDIA:?err}/media/reading/abs-metadata:/metadata
+    environment:
+      - TZ=${TIMEZONE:?err}
+
+###########################################################################
 ##  Docker Compose File:  Unpackerr (Hotio.Dev)
 ##  Function:             Archive Media Extraction
 ##  Documentation:        https://github.com/davidnewhall/unpackerr
