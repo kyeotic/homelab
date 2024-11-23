@@ -119,4 +119,13 @@
 	handle @audiobooks {
 		reverse_proxy 192.168.0.20:13378
 	}
+
+	@scrypted host scrypted.local.kye.dev
+	handle @scrypted {
+		reverse_proxy https://192.168.0.16:10443 {
+			transport http {
+				tls_insecure_skip_verify
+			}
+		}
+	}
 }
