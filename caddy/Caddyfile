@@ -46,6 +46,11 @@
 		reverse_proxy 192.168.0.20:8096
 	}
 
+	@plex host plex.local.kye.dev
+	handle @plex {
+		reverse_proxy 192.168.0.20:32400
+	}
+
 	@jellyseer host jellyseer.local.kye.dev
 	handle @jellyseer {
 		reverse_proxy 192.168.0.20:5055
@@ -59,11 +64,6 @@
 	@music host music.local.kye.dev
 	handle @music {
 		reverse_proxy 192.168.0.20:8686
-	}
-
-	@plex host plex.local.kye.dev
-	handle @plex {
-		reverse_proxy 192.168.0.20:32400
 	}
 
 	@portainer host portainer.local.kye.dev

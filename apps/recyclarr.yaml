@@ -209,6 +209,13 @@ radarr:
           - name: 4K
           - name: 1080p Only
 
+      # HD Audio, not supported on Apple TV
+      - trash_ids:
+        - 496f355514737f7d83bf7aa4d24f8169 # TrueHD ATMOS
+        - 496f355514737f7d83bf7aa4d24f8169 # TrueHD ATMOS
+        - 496f355514737f7d83bf7aa4d24f8169 # TrueHD ATMOS
+
+
       # 4K Only
       - trash_ids:
         - 4d74ac4c4db0b64bff6ce0cffef99bf0 # UHD Bluray Tier 01

@@ -72,6 +72,40 @@ services:
       # - VPN_PORT_FORWARDING_USERNAME=${VPN_USERNAME}
       # - VPN_PORT_FORWARDING_PASSWORD=${VPN_PASSWORD}
 
+###########################################################################
+##  Docker Compose File:    Plex
+##  Function:               Media Client
+##  Documentation:          https://github.com/plexinc/pms-docker
+###########################################################################
+  plex:
+    image: plexinc/pms-docker
+    container_name: plex
+    environment:
+      - PLEX_CLAIM=${PLEX_CLAIM:?err}
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/plex:/config
+      - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
+    ports:
+      - 32400:32400
+      - 3005:3005
+      - 8324:8324
+      - 32469:32469
+      - 1900:1900/udp
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+    # devices:
+    #   - /dev/dri/renderD128:/dev/dri/renderD128
+    # Hardware Acceleration
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "106" # Change this to match your "render" host group id and remove this comment
+      - "44" # Change this to match your "video" host group id and remove this comment
+    # End Hardware Acceleration
+    restart: unless-stopped
+
 
 # NOTE: Gluetun VPN container MUST ONLY connect to the media-network
 
