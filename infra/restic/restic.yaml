@@ -12,20 +12,11 @@ default:
       - "/tank/apps"
       - "/tank/media_root/media/music"
     schedule: "Mon, 04:00"
-    forget:
-      keep-last: 3
-      prune: true
-    retention:
-      before-backup: false
-      after-backup: true
-      keep-last: 3
-      prune: true
-      # tag can be a boolean ('true' meaning to copy tag set from 'backup') 
-      # or a custom set of tags.
-      # Default is 'false', meaning that tags are NOT used.
-      tag: false
-      # only consider snapshots for this host
-      # (can be specified multiple times) (default: $RESTIC_HOST).
-      # Boolean true is replaced with the hostname that applies in section “backup”.
-      # Defaults to true for config version 2 in “retention”. Examples: true, false, "host"
-      host: true
+  retention:
+    group-by: ""
+    before-backup: false
+    after-backup: true
+    keep-last: 3
+    prune: true
+    tag: true
+    host: true
