@@ -10,7 +10,6 @@ homelab.kye.dev {
 			region "us-west-2"
 		}
 	}
-	
 	reverse_proxy https://192.168.0.10:8006 {
 		transport http {
 			tls_insecure_skip_verify
@@ -143,7 +142,7 @@ homelab.kye.dev {
 
 	@scrypted host scrypted.local.kye.dev
 	handle @scrypted {
-		reverse_proxy https://192.168.0.16:10443 {
+		reverse_proxy https://192.168.0.20:10443 {
 			transport http {
 				tls_insecure_skip_verify
 			}

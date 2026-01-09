@@ -1,0 +1,85 @@
+# The Scrypted docker-compose.yml file typically resides at:
+# ~/.scrypted/docker-compose.yml
+
+services:
+    scrypted:
+        environment:
+            - SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION=Bearer ${WATCHTOWER_HTTP_API_TOKEN:-env_missing_fallback}
+            - SCRYPTED_WEBHOOK_UPDATE=http://localhost:10444/v1/update
+        image: ghcr.io/koush/scrypted
+        volumes:
+            # Default volume for the Scrypted database. Typically should not be changed.
+            # The volume will be placed relative to this docker-compose.yml.
+            # - ./volume:/server/volume
+            - /mnt/app_config/scrypted:/server/volume
+
+        devices:
+            # uncomment the common systems devices to pass
+            # them through to docker.
+
+            # all usb devices, such as coral tpu
+            # "/dev/bus/usb:/dev/bus/usb",
+
+            # hardware accelerated video decoding, opencl, etc.
+            - "/dev/dri:/dev/dri"
+
+            # AMD GPU
+            - "/dev/kfd:/dev/kfd"
+
+            # uncomment below as necessary.
+            # zwave usb serial device
+
+            # "/dev/ttyACM0:/dev/ttyACM0",
+
+            # coral PCI devices
+            # "/dev/apex_0:/dev/apex_0",
+            # "/dev/apex_1:/dev/apex_1",
+
+        container_name: scrypted
+        restart: unless-stopped
+        network_mode: host
+
+        # logging is noisy and will unnecessarily wear on flash storage.
+        # scrypted has per device in memory logging that is preferred.
+        # enable the log file if enhanced debugging is necessary.
+        logging:
+            driver: "none"
+            # driver: "json-file"
+            # options:
+            #     max-size: "10m"
+            #     max-file: "10"
+        labels:
+            - "com.centurylinklabs.watchtower.scope=scrypted"
+
+        # Use global DNS servers to avoid issues with some local DNS servers.
+        # particularly with npm registry, etc.
+        dns:
+            - ${SCRYPTED_DNS_SERVER_0:-1.1.1.1}
+            - ${SCRYPTED_DNS_SERVER_1:-8.8.8.8}
+
+    # watchtower manages updates for Scrypted.
+    watchtower:
+        environment:
+            - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN:-env_missing_fallback}
+            - WATCHTOWER_HTTP_API_UPDATE=true
+            - WATCHTOWER_SCOPE=scrypted
+            - WATCHTOWER_HTTP_API_PERIODIC_POLLS=${WATCHTOWER_HTTP_API_PERIODIC_POLLS:-true}
+        image: nickfedor/watchtower
+        container_name: scrypted-watchtower
+        restart: unless-stopped
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        labels:
+            - "com.centurylinklabs.watchtower.scope=scrypted"
+        ports:
+            # The auto update port 10444 can be configured
+            # Must match the port in the auto update url above.
+            - 10444:8080
+        # check for updates once an hour (interval is in seconds)
+        command: --interval 3600 --cleanup --scope scrypted
+
+        # Use global DNS servers to avoid issues with some local DNS servers.
+        # particularly with npm registry, etc.
+        dns:
+            - ${SCRYPTED_DNS_SERVER_0:-1.1.1.1}
+            - ${SCRYPTED_DNS_SERVER_1:-8.8.8.8}
