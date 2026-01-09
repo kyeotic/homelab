@@ -21,7 +21,6 @@ This document details the network design for the homelab.
 | caddy       | 192.168.0.13  | Caddy (Reverse Proxy)        |
 | Plex        | 192.168.0.14  | Plex                         |
 | HOAS        | 192.168.0.15  | Home Assistant OS            |
-| Scrypted    | 192.168.0.16  | Scrypted Automation Server   |
 | AdGuard     | 192.168.0.17  | Pi Hole DNS Blocker          |
 | VPN         | 192.168.0.18  | Tailscale Router             |
 | PBS         | 192.168.0.19  | Proxmox Backup Server        |
