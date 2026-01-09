@@ -2,11 +2,27 @@
 	email "tim@kye.dev"
 }
 
+homelab.kye.dev {
+	tls {
+		dns route53 {
+			access_key_id {env.AWS_ACCESS_KEY}
+			secret_access_key {env.AWS_ACCESS_SECRET}
+			region "us-west-2"
+		}
+	}
+	
+	reverse_proxy https://192.168.0.10:8006 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
+
 *.local.kye.dev {
 	tls {
 		dns route53 {
-			access_key_id "{env.AWS_ACCESS_KEY}"
-			secret_access_key "{env.AWS_ACCESS_SECRET}"
+			access_key_id {env.AWS_ACCESS_KEY}
+			secret_access_key {env.AWS_ACCESS_SECRET}
 			region "us-west-2"
 		}
 	}
@@ -113,6 +129,11 @@
 	@reader host reader.local.kye.dev
 	handle @reader {
 		reverse_proxy 192.168.0.20:8787
+	}
+
+	@calibre host calibre.local.kye.dev
+	handle @calibre {
+		reverse_proxy 192.168.0.20:8083
 	}
 
 	@audiobooks host audiobooks.local.kye.dev
