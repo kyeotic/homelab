@@ -297,6 +297,13 @@ First install
 apt install restic
 ```
 
+Then install resticprofile (see docs)[https://creativeprojects.github.io/resticprofile/installation/linux/index.html]
+
+Create `profiles.yaml` using the `restic/restic.yaml`.
+Create `~/restic-password` using the repo password in bitwarden.
+
+Then run resticprofile
+
 ## Nested Virtualization Support
 
 Check for support first

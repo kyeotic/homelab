@@ -1,0 +1,23 @@
+services:
+  ffmpeg:
+    image: jrottenberg/ffmpeg:latest
+    container_name: ffmpeg
+    restart: unless-stopped
+    # Hardware Acceleration
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/kfd:/dev/kfd
+    group_add:
+      - "106" # Change this to match your "render" host group: getent group render | cut -d: -f3 # 106 for me
+      - "44" # Change this to match your "video" host group: getent group video | cut -d: -f3 # 44 for me
+    entrypoint: /bin/sh  # or /bin/bash if available
+    stdin_open: true   # equivalent to -i
+    tty: true          # equivalent to -t
+    command: []        # empty command to just start the shell
+    volumes:
+      - /mnt/media_root:/mnt/media_root
+    environment:
+      - PUID=1000
+      - PGID=10000
+      - UMASK=0002
+      - TZ=America/Los_Angeles

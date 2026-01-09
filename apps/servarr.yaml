@@ -8,6 +8,9 @@ networks:
     #   - subnet: ${DOCKER_SUBNET:?err}
     #     gateway: ${DOCKER_GATEWAY:?err}
 
+volumes:
+  rreading_glasses_data:
+
 ###########################################################################
 ##  Docker Compose File:    Gluetun (qmcgaw)
 ##  Function:               VPN Client
@@ -428,9 +431,12 @@ services:
     image: lscr.io/linuxserver/readarr:develop
     container_name: readarr
     restart: unless-stopped
+    depends_on:
+      - calibre
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/readarr:/config
       - ${FOLDER_FOR_MEDIA:?err}:/data
+      - '/books:/books'
     ports:
       - "${WEBUI_PORT_READARR:?err}:8787"
     environment:
@@ -443,22 +449,86 @@ services:
       - media-network
 
 ###########################################################################
+##  Docker Compose File:  Calibre-Web-Automated
+##  Function:             eBooks Library Manager
+##  Documentation:        https://github.com/crocodilestick/Calibre-Web-Automated
+###########################################################################
+  calibre:
+    image: crocodilestick/calibre-web-automated:latest
+    container_name: calibre-web-automated
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+      - TZ=${TIMEZONE:?err}
+      - HARDCOVER_API_KEY=${HARDCOVER_API_KEY:?err}
+      # If your library is on a network share (e.g., NFS/SMB), disable WAL to reduce locking issues
+      # Accepts: true/false (default: false)
+      - NETWORK_SHARE_MODE=true
+      # Override the default port (8083) for the web server.
+      # Accepts any valid port number.
+      - CWA_PORT_OVERRIDE=${WEBUI_PORT_CALIBRE:?err}
+    volumes:
+      # CW users migrating should stop their existing CW instance, make a copy of the config folder, and bind that here to carry over all of their user settings ect.
+      - ${FOLDER_FOR_CONFIGS:?err}/calibre-web-automated:/config
+      # This is an ingest dir, NOT a library one.
+      # Anything added here will be automatically added to your library
+      # according to the settings you have configured in CWA Settings page.
+      # All files placed here are REMOVED AFTER PROCESSING
+      - ${FOLDER_FOR_MEDIA:?err}/books-ingest:/cwa-book-ingest
+      # If you don't have an existing library, CWA will automatically create one at the bind provided here
+      - ${FOLDER_FOR_MEDIA:?err}/media/reading/library:/calibre-library
+      # If you use calibre plugins, you can bind your plugins folder here to have CWA
+      # attempt to add them to its workflow (WIP)
+      # If you are starting with a fresh install, you also need to copy customize.py.json
+      # to the Calibre config volume above,
+      # in /path/to/config/folder/.config/calibre/customize.py.json, see the note below for more info
+      - ${FOLDER_FOR_CONFIGS:?err}/calibre-web-automated:/config/.config/calibre/plugins
+    ports:
+      # Change the first number to change the port you want to access the Web UI, not the second
+      - ${WEBUI_PORT_CALIBRE:?err}:${WEBUI_PORT_CALIBRE:?err}
+    restart: unless-stopped
+
+###########################################################################
+##  Docker Compose File:  lazylibrarian (LinuxServer.io)
+##  Function:             eBooks Library Manager
+##  Documentation:        https://hub.docker.com/r/linuxserver/lazylibrarian
+###########################################################################
+  # lazylibrarian:
+  #   image: lscr.io/linuxserver/lazylibrarian:latest
+  #   container_name: lazylibrarian
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - DOCKER_MODS=linuxserver/mods:universal-calibre|linuxserver/mods:lazylibrarian-ffmpeg #optional
+  #   volumes:
+  #     - /path/to/lazylibrarian/data:/config
+  #     - /path/to/downloads/:/downloads
+  #     - /path/to/data/:/books #optional
+  #     - ${FOLDER_FOR_CONFIGS:?err}/lazylibrarian:/config
+  #     - ${FOLDER_FOR_MEDIA:?err}:/downloads
+  #     - ${FOLDER_FOR_MEDIA:?err}/media/reading:/data
+  #   ports:
+  #     - 5299:5299
+  #   restart: unless-stopped
+###########################################################################
 ##  Docker Compose File:  audiobookshelf (LinuxServer.io)
 ##  Function:             Audio Books UI
 ##  Documentation:        https://www.audiobookshelf.org/docs/#docker-compose-install
 ###########################################################################
-  audiobookshelf:
-    container_name: audiobookshelf
-    image: ghcr.io/advplyr/audiobookshelf:latest
-    ports:
-      - 13378:80
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/audiobookshelf:/config
-      - ${FOLDER_FOR_MEDIA:?err}/media/reading/audiobooks:/audiobooks
-      - ${FOLDER_FOR_MEDIA:?err}/media/podcasts:/podcasts
-      - ${FOLDER_FOR_MEDIA:?err}/media/reading/abs-metadata:/metadata
-    environment:
-      - TZ=${TIMEZONE:?err}
+  # audiobookshelf:
+  #   container_name: audiobookshelf
+  #   image: ghcr.io/advplyr/audiobookshelf:latest
+  #   ports:
+  #     - 13378:80
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/audiobookshelf:/config
+  #     - ${FOLDER_FOR_MEDIA:?err}/media/reading/audiobooks:/audiobooks
+  #     - ${FOLDER_FOR_MEDIA:?err}/media/podcasts:/podcasts
+  #     - ${FOLDER_FOR_MEDIA:?err}/media/reading/abs-metadata:/metadata
+  #   environment:
+  #     - TZ=${TIMEZONE:?err}
 
 ###########################################################################
 ##  Docker Compose File:  Unpackerr (Hotio.Dev)
@@ -549,41 +619,41 @@ services:
 ##  Function:             Debrid download client
 ##  Documentation:        https://github.com/rogerfar/rdt-client/blob/master/README-DOCKER.md
 ###########################################################################
-  rdtclient:
-    image: rogerfar/rdtclient
-    container_name: rdtclient
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/rdtclient:/data/db
-      - ${FOLDER_FOR_MEDIA:?err}/torrents/:/data/downloads
-    logging:
-       driver: json-file
-       options:
-          max-size: 10m
-    # ports:
-    #   - 6500:6500
-    restart: unless-stopped
-    network_mode: "service:gluetun"
+  # rdtclient:
+  #   image: rogerfar/rdtclient
+  #   container_name: rdtclient
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - UMASK=${UMASK:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/rdtclient:/data/db
+  #     - ${FOLDER_FOR_MEDIA:?err}/torrents/:/data/downloads
+  #   logging:
+  #      driver: json-file
+  #      options:
+  #         max-size: 10m
+  #   # ports:
+  #   #   - 6500:6500
+  #   restart: unless-stopped
+  #   network_mode: "service:gluetun"
 
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
-    security_opt:
-      - seccomp:unconfined #optional
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - TZ=${TIMEZONE:?err}
-      - FIREFOX_CLI=https://www.linuxserver.io/ #optional
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
-    shm_size: "1gb"
-    restart: no
-    network_mode: "service:gluetun"
+  # firefox:
+  #   image: lscr.io/linuxserver/firefox:latest
+  #   container_name: firefox
+  #   security_opt:
+  #     - seccomp:unconfined #optional
+  #   environment:
+  #     - PUID=${PUID:?err}
+  #     - PGID=${PGID:?err}
+  #     - TZ=${TIMEZONE:?err}
+  #     - FIREFOX_CLI=https://www.linuxserver.io/ #optional
+  #   volumes:
+  #     - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
+  #   shm_size: "1gb"
+  #   restart: no
+  #   network_mode: "service:gluetun"
 
   # tdarr:
   #   container_name: tdarr
