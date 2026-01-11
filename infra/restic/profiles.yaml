@@ -21,10 +21,5 @@ default:
     tag: true
     host: true
 
-restore-containers:
-  inherit: default
-  path:
-    - "/tank/container-backups/dump"
-  target: "/tank/container-backups/dump"
-
+# To restore a backup, use a command like:
 # resticprofile restore latest:/var/lib/vz/dump --target="/tank/container-backups/dump"

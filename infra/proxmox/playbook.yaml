@@ -3,8 +3,80 @@
   tasks:
     - name: sync restic profile
       synchronize:
-        src: ../restic/restic.yaml
+        src: ../restic/profiles.yaml
         dest: /root/profiles.yaml
+
+    - name: create restic password file
+      copy:
+        content: "{{ restic_password }}"
+        dest: /root/restic-password
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: install resticprofile
+      block:
+        - name: download resticprofile install script
+          get_url:
+            url: https://raw.githubusercontent.com/creativeprojects/resticprofile/master/install.sh
+            dest: /tmp/resticprofile-install.sh
+            mode: '0755'
+
+        - name: run resticprofile install script
+          command: /tmp/resticprofile-install.sh -b /usr/local/bin
+          args:
+            creates: /usr/local/bin/resticprofile
+
+        - name: cleanup install script
+          file:
+            path: /tmp/resticprofile-install.sh
+            state: absent
+
+    - name: create proxmox directory storage for container backups
+      command:
+        cmd: pvesm add dir container-backups --path /tank/container-backups --content backup
+        creates: /etc/pve/storage.cfg
+      register: storage_add
+      failed_when:
+        - storage_add.rc != 0
+        - "'already exists' not in storage_add.stderr"
+
+    - name: create lxc virtual users
+      block:
+        - name: create nas_shares group for lxc mapping
+          group:
+            name: nas_shares
+            gid: 110000
+            state: present
+
+        - name: create nas user for lxc mapping
+          user:
+            name: nas
+            uid: 101000
+            group: nas_shares
+            create_home: yes
+            shell: /bin/bash
+            state: present
+
+    - name: configure gpu access for unprivileged lxc containers
+      block:
+        - name: copy udev rules for gpu access
+          copy:
+            src: 99-gpu-chmod666.rules
+            dest: /etc/udev/rules.d/99-gpu-chmod666.rules
+            mode: '0644'
+            owner: root
+            group: root
+          register: udev_rules
+
+        - name: reload udev rules
+          command: udevadm control --reload-rules
+          when: udev_rules.changed
+
+        - name: trigger udev
+          command: udevadm trigger
+          when: udev_rules.changed
+
   #  - name: Ping my hosts
   #    ansible.builtin.ping:
 

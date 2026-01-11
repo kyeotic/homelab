@@ -1,0 +1,4 @@
+KERNEL=="renderD128", MODE="0666"
+KERNEL=="kfd", MODE="0666"
+KERNEL=="kfd", GROUP="render", MODE="0666"
+KERNEL=="card0", MODE="0666"
