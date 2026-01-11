@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(dirname "$0")"
+
+
+# copy the profiles.yaml to 192.168.0.10 using scp
+scp "$SCRIPT_DIR/profiles.yaml" root@192.168.0.10:/root/profiles.yaml

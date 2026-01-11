@@ -7,7 +7,7 @@ default:
   backup:
     verbose: true
     source:
-      - "/var/lib/vz/dump"
+      - "/tank/container-backups/dump"
       - "/tank/nas"
       - "/tank/apps"
       - "/tank/media_root/media/music"
@@ -20,3 +20,11 @@ default:
     prune: true
     tag: true
     host: true
+
+restore-containers:
+  inherit: default
+  path:
+    - "/tank/container-backups/dump"
+  target: "/tank/container-backups/dump"
+
+# resticprofile restore latest:/var/lib/vz/dump --target="/tank/container-backups/dump"
