@@ -11,3 +11,13 @@ services:
     network_mode: host
     ports:
       - 8123:8123
+  matter-server:
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: matter-server
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /mnt/app_config/ha-matter-server:/data
+      - /run/dbus:/run/dbus:ro
+    security_opt:
+      - apparmor=unconfined

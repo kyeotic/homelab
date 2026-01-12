@@ -1,0 +1,52 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /mnt/app_config/home-assistant:/config
+      # - /home/pi/ESPSomfy-RTS-HA/custom_components/espsomfy_rts:/config/custom_components/espsomfy_rts
+      # - /home/pi/connectlife-ha/custom_components/connectlife:/config/custom_components/connectlife
+      # - /home/pi/adaptive-lighting/custom_components/adaptive_lighting:/config/custom_components/adaptive_lighting
+      # - /home/pi/hacs_waste_collection_schedule/custom_components/waste_collection_schedule:/config/custom_components/waste_collection_schedule
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    depends_on:
+      - zigbee2mqtt
+    privileged: true
+    network_mode: host
+    ports:
+      - 8123:8123
+
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    volumes:
+      - '/home/pi/mosquitto-data:/mosquitto'
+    network_mode: host
+    command: 'mosquitto -c /mosquitto-no-auth.conf'
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+    image: koenkk/zigbee2mqtt
+    volumes:
+      - /home/pi/zigbee2mqtt-data:/app/data
+      - /run/udev:/run/udev:ro
+    network_mode: host
+    environment:
+      - TZ=America/Los_Angeles
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+
+  # nginx:
+  #   container_name: nginx
+  #   hostname: nginx
+  #   image: nginx
+  #   volumes:
+  #     - /home/pi/nginx-conf:/etc/nginx/conf.d
+  #     - /home/pi/ssl:/etc/ssl/private:ro
+  #   network_mode: host
+  #   restart: unless-stopped

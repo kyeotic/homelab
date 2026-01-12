@@ -53,7 +53,7 @@ homelab.kye.dev {
 
 	@homeassistant host homeassistant.local.kye.dev
 	handle @homeassistant {
-		reverse_proxy 192.168.0.15:8123
+		reverse_proxy 192.168.0.20:8123
 	}
 
 	@jellyfin host jellyfin.local.kye.dev

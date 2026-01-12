@@ -2,6 +2,8 @@
 
 # Push the Caddyfile over SSH and reload the docker config
 
-scp Caddyfile root@192.168.0.13:/root/caddy/Caddyfile
-scp reload root@192.168.0.13:/root/caddy/reload
+# make the Caddyfile and reload file relative to this script
+SCRIPT_DIR="$(dirname "$0")"
+scp "$SCRIPT_DIR/Caddyfile" root@192.168.0.13:/root/caddy/Caddyfile
+scp "$SCRIPT_DIR/reload" root@192.168.0.13:/root/caddy/reload
 ssh root@192.168.0.13 "(cd /root/caddy && ./reload)"
