@@ -88,6 +88,35 @@
           command: udevadm trigger
           when: udev_rules.changed
 
+    - name: get list of container IDs
+      tags: [setup, sync-ssh]
+      shell: pct list | awk 'NR>1 {print $1}'
+      register: container_ids
+      changed_when: false
+
+    - name: get authorized_keys checksum
+      tags: [setup, sync-ssh]
+      shell: sha1sum /root/.ssh/authorized_keys | cut -d' ' -f1
+      register: source_authorized_keys
+      changed_when: false
+
+    - name: get container authorized_keys checksums
+      tags: [setup, sync-ssh]
+      shell: |
+        pct exec {{ item }} -- mkdir -p /root/.ssh
+        pct exec {{ item }} -- sha1sum /root/.ssh/authorized_keys 2>/dev/null | cut -d' ' -f1 || echo ""
+      loop: "{{ container_ids.stdout_lines }}"
+      register: container_checksums
+      changed_when: false
+
+    - name: push authorized_keys to containers
+      tags: [setup, sync-ssh]
+      shell: |
+        pct push {{ item.item }} /root/.ssh/authorized_keys /root/.ssh/authorized_keys
+        pct exec {{ item.item }} -- chmod 600 /root/.ssh/authorized_keys
+      loop: "{{ container_checksums.results }}"
+      when: item.stdout != source_authorized_keys.stdout
+
 - name: Configure Caddy
   hosts: caddy
   tasks:
