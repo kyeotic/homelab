@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: kyeotic/caddy-route53:latest
+    build: .
     restart: unless-stopped
     ports:
       - '80:80'
