@@ -4,7 +4,7 @@ data "aws_iam_user" "homelab" {
 
 resource "aws_iam_policy" "ddns-manager" {
   name        = "ddns-manager"
-  description = "Manage Dynamic DNS deployments"
+  description = "Manage Dynamic DNS deployments, including Caddy"
 
   policy = data.aws_iam_policy_document.ddns.json
 }

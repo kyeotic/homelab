@@ -1,12 +1,14 @@
-- name: Configure
+- name: Configure Proxmox
   hosts: proxmox
   tasks:
     - name: sync restic profile
+      tags: [sync]
       synchronize:
         src: ../restic/profiles.yaml
         dest: /root/profiles.yaml
 
     - name: create restic password file
+      tags: [setup]
       copy:
         content: "{{ restic_password }}"
         dest: /root/restic-password
@@ -14,7 +16,14 @@
         owner: root
         group: root
 
+    - name: check if resticprofile is installed
+      tags: [setup]
+      stat:
+        path: /usr/local/bin/resticprofile
+      register: resticprofile_binary
+
     - name: install resticprofile
+      tags: [setup]
       block:
         - name: download resticprofile install script
           get_url:
@@ -24,15 +33,15 @@
 
         - name: run resticprofile install script
           command: /tmp/resticprofile-install.sh -b /usr/local/bin
-          args:
-            creates: /usr/local/bin/resticprofile
 
         - name: cleanup install script
           file:
             path: /tmp/resticprofile-install.sh
             state: absent
+      when: not resticprofile_binary.stat.exists
 
     - name: create proxmox directory storage for container backups
+      tags: [setup]
       command:
         cmd: pvesm add dir container-backups --path /tank/container-backups --content backup
         creates: /etc/pve/storage.cfg
@@ -42,6 +51,7 @@
         - "'already exists' not in storage_add.stderr"
 
     - name: create lxc virtual users
+      tags: [setup]
       block:
         - name: create nas_shares group for lxc mapping
           group:
@@ -59,6 +69,7 @@
             state: present
 
     - name: configure gpu access for unprivileged lxc containers
+      tags: [setup]
       block:
         - name: copy udev rules for gpu access
           copy:
@@ -76,6 +87,24 @@
         - name: trigger udev
           command: udevadm trigger
           when: udev_rules.changed
+
+- name: Configure Caddy
+  hosts: caddy
+  tasks:
+    - name: sync Caddyfile
+      tags: [sync]
+      copy:
+        src: ../caddy/Caddyfile
+        dest: /root/caddy/Caddyfile
+        mode: '0644'
+      register: caddyfile_sync
+
+    - name: reload caddy config
+      tags: [sync]
+      command:
+        cmd: docker compose exec -w /etc/caddy caddy caddy reload
+        chdir: /root/caddy
+      when: caddyfile_sync.changed
 
   #  - name: Ping my hosts
   #    ansible.builtin.ping:

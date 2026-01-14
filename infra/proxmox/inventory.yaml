@@ -3,3 +3,9 @@ proxmox:
     homelab:
       ansible_host: 192.168.0.10
       ansible_user: root
+
+caddy:
+  hosts:
+    caddy-container:
+      ansible_host: 192.168.0.13
+      ansible_user: root

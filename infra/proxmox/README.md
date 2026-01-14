@@ -1,12 +1,14 @@
-# Proxmox Configuration with Ansible
+# Homelab Configuration with Ansible
 
-This directory contains Ansible playbooks to automate the initial configuration of your Proxmox homelab host.
+This directory contains Ansible playbooks to automate configuration of your homelab infrastructure, including the Proxmox host and Caddy reverse proxy container.
 
 ## Prerequisites
 
 - Ansible installed on your local machine
-- SSH access to your Proxmox host (configured as `homelab` at `192.168.0.10` in `inventory.yaml`)
-- Root access on the Proxmox host
+- SSH access to your hosts:
+  - Proxmox host (configured as `homelab` at `192.168.0.10` in `inventory.yaml`)
+  - Caddy container (configured as `caddy-container` at `192.168.0.13` in `inventory.yaml`)
+- Root access on both hosts
 - The restic password encrypted in `group_vars/proxmox/vault.yml`
 
 ## Setup

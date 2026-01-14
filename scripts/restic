@@ -1,1 +1,0 @@
- ansible-playbook -i infra/proxmox/inventory.yaml infra/proxmox/playbook.yaml
