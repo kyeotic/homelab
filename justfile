@@ -32,6 +32,7 @@ deploy tag="":
         echo ""
         echo "  setup-proxmox       Initial Proxmox setup (repos, ZFS, restic, storage, users, GPU)"
         echo "  setup-caddy         Initial Caddy reverse proxy setup"
+        echo "  setup-docker        Docker host setup (cleanup timer)"
         echo "  restore-containers  Restore LXC containers from restic backup"
         echo "  sync                Sync all config files (restic, caddy, ssh)"
         echo "  sync-restic         Sync restic profile only"

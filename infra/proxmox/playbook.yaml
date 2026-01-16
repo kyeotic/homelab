@@ -36,3 +36,8 @@
         cmd: docker compose exec -w /etc/caddy caddy caddy reload
         chdir: /root/caddy
       when: caddyfile_sync.changed
+
+- name: Configure Docker
+  hosts: docker
+  roles:
+    - { role: docker-cleanup, tags: [setup-docker] }

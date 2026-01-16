@@ -13,3 +13,9 @@ caddy:
     caddy-container:
       ansible_host: 192.168.0.13
       ansible_user: root
+
+docker:
+  hosts:
+    docker:
+      ansible_host: 192.168.0.20
+      ansible_user: root
