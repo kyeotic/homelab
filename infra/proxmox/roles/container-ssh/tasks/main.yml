@@ -1,0 +1,32 @@
+---
+# Sync SSH authorized_keys to all LXC containers
+# Uses pct mount/unmount to access container filesystems (works with LVM storage)
+
+- name: get list of container IDs
+  shell: pct list | awk 'NR>1 {print $1}'
+  register: container_ids
+  changed_when: false
+
+- name: sync authorized_keys to containers
+  shell: |
+    CTID={{ item }}
+    STATUS=$(pct status $CTID | awk '{print $2}')
+
+    if [ "$STATUS" = "running" ]; then
+      # Container is running - use pct exec
+      pct exec $CTID -- mkdir -p /root/.ssh
+      pct push $CTID /root/.ssh/authorized_keys /root/.ssh/authorized_keys --perms 600
+      echo "synced-running"
+    else
+      # Container is stopped - mount, copy, unmount
+      pct mount $CTID
+      MOUNTPOINT="/var/lib/lxc/${CTID}/rootfs"
+      mkdir -p "${MOUNTPOINT}/root/.ssh"
+      cp /root/.ssh/authorized_keys "${MOUNTPOINT}/root/.ssh/authorized_keys"
+      chmod 600 "${MOUNTPOINT}/root/.ssh/authorized_keys"
+      pct unmount $CTID
+      echo "synced-stopped"
+    fi
+  loop: "{{ container_ids.stdout_lines }}"
+  register: sync_result
+  changed_when: "'synced' in sync_result.stdout"

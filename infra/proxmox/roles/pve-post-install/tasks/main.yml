@@ -1,0 +1,108 @@
+---
+# PVE Post-Install Tasks
+# Implements the community post-install script as idempotent Ansible tasks
+
+# === Disable all enterprise repos FIRST (before any apt operations) ===
+
+- name: check if pve-enterprise.list repository exists
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/pve-enterprise.list
+  register: pve_enterprise_list_file
+
+- name: disable pve-enterprise.list repository
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/pve-enterprise.list
+    regexp: '^deb https://enterprise.proxmox.com'
+    line: '# deb https://enterprise.proxmox.com/debian/pve bookworm pve-enterprise'
+  when: pve_enterprise_list_file.stat.exists
+
+- name: check if pve-enterprise.sources repository exists (DEB822 format)
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/pve-enterprise.sources
+  register: pve_enterprise_sources_file
+
+- name: disable pve-enterprise.sources repository (DEB822 format)
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/pve-enterprise.sources
+    regexp: '^Enabled:'
+    line: 'Enabled: no'
+    insertafter: '^Types:'
+  when: pve_enterprise_sources_file.stat.exists
+
+- name: check if ceph.list enterprise repository exists
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/ceph.list
+  register: ceph_enterprise_list_file
+
+- name: disable ceph.list enterprise repository
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/ceph.list
+    regexp: '^deb https://enterprise.proxmox.com/debian/ceph'
+    line: '# deb https://enterprise.proxmox.com/debian/ceph-quincy bookworm enterprise'
+  when: ceph_enterprise_list_file.stat.exists
+
+- name: check if ceph.sources enterprise repository exists (DEB822 format)
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/ceph.sources
+  register: ceph_enterprise_sources_file
+
+- name: disable ceph.sources enterprise repository (DEB822 format)
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/ceph.sources
+    regexp: '^Enabled:'
+    line: 'Enabled: no'
+    insertafter: '^Types:'
+  when: ceph_enterprise_sources_file.stat.exists
+
+# === Now safe to do apt operations ===
+
+- name: add pve-no-subscription repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription"
+    filename: pve-no-subscription
+    state: present
+    update_cache: no
+
+- name: update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+  register: apt_upgrade
+
+# === Subscription nag patch ===
+
+- name: check if subscription nag script exists
+  ansible.builtin.stat:
+    path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+  register: proxmoxlib_js
+
+- name: check if subscription nag is already patched
+  ansible.builtin.shell: |
+    grep -c "void({ //if" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js || echo "0"
+  register: nag_already_patched
+  changed_when: false
+  when: proxmoxlib_js.stat.exists
+
+- name: patch subscription nag check
+  ansible.builtin.replace:
+    path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+    regexp: 'Ext\.Msg\.show\(\{\s*title:\s*gettext\(.No valid subscription'
+    replace: 'void({ //Ext.Msg.show({ title: gettext("No valid subscription'
+  when: proxmoxlib_js.stat.exists and (nag_already_patched.stdout | trim) == '0'
+  notify: restart pveproxy
+
+# === Reboot check ===
+
+- name: check if reboot is required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+
+- name: notify about pending reboot
+  ansible.builtin.debug:
+    msg: "System reboot is required to complete updates"
+  when: reboot_required.stat.exists

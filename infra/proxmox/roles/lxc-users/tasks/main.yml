@@ -1,0 +1,17 @@
+---
+# LXC virtual users for container mapping
+
+- name: create nas_shares group for lxc mapping
+  group:
+    name: nas_shares
+    gid: 110000
+    state: present
+
+- name: create nas user for lxc mapping
+  user:
+    name: nas
+    uid: 101000
+    group: nas_shares
+    create_home: yes
+    shell: /bin/bash
+    state: present

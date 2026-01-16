@@ -1,0 +1,39 @@
+---
+# Restic/Resticprofile setup
+
+- name: install restic
+  ansible.builtin.apt:
+    name: restic
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: create restic password file
+  copy:
+    content: "{{ restic_password }}"
+    dest: /root/restic-password
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: check if resticprofile is installed
+  stat:
+    path: /usr/local/bin/resticprofile
+  register: resticprofile_binary
+
+- name: install resticprofile
+  block:
+    - name: download resticprofile install script
+      get_url:
+        url: https://raw.githubusercontent.com/creativeprojects/resticprofile/master/install.sh
+        dest: /tmp/resticprofile-install.sh
+        mode: '0755'
+
+    - name: run resticprofile install script
+      command: /tmp/resticprofile-install.sh -b /usr/local/bin
+
+    - name: cleanup install script
+      file:
+        path: /tmp/resticprofile-install.sh
+        state: absent
+  when: not resticprofile_binary.stat.exists

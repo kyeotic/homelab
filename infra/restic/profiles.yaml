@@ -22,4 +22,4 @@ default:
     host: true
 
 # To restore a backup, use a command like:
-# resticprofile restore latest:/var/lib/vz/dump --target="/tank/container-backups/dump"
+# resticprofile restore latest:/tank/container-backups/dump --target="/tank/container-backups/dump"

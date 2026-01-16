@@ -1,0 +1,93 @@
+---
+# ZFS Pool setup
+# - Skips if pool already exists
+# - Prompts for action if pool doesn't exist: import, create-test, or skip
+
+- name: check if zfs pool exists
+  command: zpool list {{ zfs_pool_name | default('tank') }}
+  register: pool_check
+  failed_when: false
+  changed_when: false
+
+- name: pool already exists
+  debug:
+    msg: "ZFS pool '{{ zfs_pool_name | default('tank') }}' already exists and is mounted"
+  when: pool_check.rc == 0
+
+- name: check for importable pools
+  command: zpool import
+  register: importable_pools
+  failed_when: false
+  changed_when: false
+  when: pool_check.rc != 0
+
+- name: prompt for zfs pool action
+  pause:
+    prompt: |
+
+      ZFS pool '{{ zfs_pool_name | default('tank') }}' does not exist.
+
+      Available pools to import:
+      {{ importable_pools.stdout | default('(none found)') }}
+
+      Choose an action:
+        [import] - Import existing pool from external drives
+        [test]   - Create a test pool using sparse files (for testing only)
+        [skip]   - Skip ZFS setup (tasks depending on pool will fail)
+
+      Enter choice [import/test/skip]
+  register: zfs_action
+  when: pool_check.rc != 0
+
+- name: import existing zfs pool
+  command: zpool import {{ zfs_pool_name | default('tank') }}
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'import'
+
+- name: create test pool directory
+  file:
+    path: /tmp/zfs-test
+    state: directory
+    mode: '0755'
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'test'
+
+- name: create sparse file for test pool
+  command: truncate -s {{ zfs_test_pool_size | default('30G') }} /tmp/zfs-test/disk.img
+  args:
+    creates: /tmp/zfs-test/disk.img
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'test'
+
+- name: create test zfs pool
+  command: zpool create {{ zfs_pool_name | default('tank') }} /tmp/zfs-test/disk.img
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'test'
+
+- name: create container-backups dataset for test pool
+  community.general.zfs:
+    name: "{{ zfs_pool_name | default('tank') }}/container-backups"
+    state: present
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'test'
+
+- name: create dump directory for test pool
+  file:
+    path: "/{{ zfs_pool_name | default('tank') }}/container-backups/dump"
+    state: directory
+    mode: '0755'
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'test'
+
+- name: skipping zfs setup
+  debug:
+    msg: "Skipping ZFS pool setup. Tasks depending on /{{ zfs_pool_name | default('tank') }} may fail."
+  when:
+    - pool_check.rc != 0
+    - zfs_action.user_input | lower == 'skip'

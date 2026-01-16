@@ -1,0 +1,12 @@
+---
+# GPU access for unprivileged LXC containers
+
+- name: copy udev rules for gpu access
+  copy:
+    src: 99-gpu-chmod666.rules
+    dest: /etc/udev/rules.d/99-gpu-chmod666.rules
+    mode: '0644'
+    owner: root
+    group: root
+  register: udev_rules
+  notify: reload udev rules
