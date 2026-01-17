@@ -1,0 +1,12 @@
+---
+# Install common packages on Proxmox host
+
+- name: install packages
+  apt:
+    name:
+      - htop
+      - sysstat
+      - radeontop
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600

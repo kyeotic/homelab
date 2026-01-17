@@ -3,6 +3,7 @@
   hosts: proxmox
   roles:
     - { role: pve-post-install, tags: [setup-proxmox] }
+    - { role: proxmox-packages, tags: [setup-proxmox] }
     - { role: zfs-pool, tags: [setup-proxmox, restore-containers] }
     - { role: restic, tags: [setup-proxmox, restore-containers] }
     - { role: proxmox-storage, tags: [setup-proxmox, restore-containers] }
