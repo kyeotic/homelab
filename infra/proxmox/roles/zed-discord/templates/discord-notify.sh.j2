@@ -13,9 +13,9 @@ SUBCLASS="${ZEVENT_SUBCLASS:-unknown}"
 VDEV_PATH="${ZEVENT_VDEV_PATH:-}"
 VDEV_STATE="${ZEVENT_VDEV_STATE_STR:-}"
 
-# Only notify on errors
+# Only notify on errors (subclass names from ereport.fs.zfs.*)
 case "$SUBCLASS" in
-    checksum_error|io_error|data_error)
+    checksum|io|data)
         TITLE="⚠️ ZFS Error: $SUBCLASS"
         DESC="**Pool:** $POOL"
         [ -n "$VDEV_PATH" ] && DESC="$DESC\n**Device:** $VDEV_PATH"

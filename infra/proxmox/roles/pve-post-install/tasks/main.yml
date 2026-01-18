@@ -23,7 +23,7 @@
 
 - name: check if pve-enterprise.sources is already disabled
   ansible.builtin.shell:
-    cmd: grep -q '^Enabled: no' /etc/apt/sources.list.d/pve-enterprise.sources
+    cmd: "grep -q '^Enabled: no' /etc/apt/sources.list.d/pve-enterprise.sources"
   register: pve_sources_disabled
   changed_when: false
   failed_when: false
@@ -56,7 +56,7 @@
 
 - name: check if ceph.sources is already disabled
   ansible.builtin.shell:
-    cmd: grep -q '^Enabled: no' /etc/apt/sources.list.d/ceph.sources
+    cmd: "grep -q '^Enabled: no' /etc/apt/sources.list.d/ceph.sources"
   register: ceph_sources_disabled
   changed_when: false
   failed_when: false
