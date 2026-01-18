@@ -22,6 +22,7 @@
 
 - name: Configure Caddy
   hosts: caddy
+  gather_facts: false
   roles:
     - { role: caddy, tags: [setup-caddy] }
   tasks:
@@ -42,6 +43,7 @@
 
 - name: Configure Docker
   hosts: docker
+  gather_facts: false
   roles:
     - { role: docker-portainer, tags: [setup-docker] }
     - { role: docker-cleanup, tags: [setup-docker] }

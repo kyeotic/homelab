@@ -1,7 +1,7 @@
 version: "1"
 
 default:
-  repository: "SECRET"
+  repository: "rest:https://sd9j6dod:X23NkZv6sobxuAND@sd9j6dod.repo.borgbase.com"
   password-file: "~/restic-password"
 
   lock-timeout: "30m"
