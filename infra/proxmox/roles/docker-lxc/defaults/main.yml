@@ -1,0 +1,27 @@
+---
+# Docker LXC container configuration
+
+docker_lxc_vmid: 103
+docker_lxc_hostname: docker
+docker_lxc_cores: 6
+docker_lxc_memory: 20480
+docker_lxc_swap: 2048
+docker_lxc_disk: 40
+docker_lxc_storage: local-lvm
+docker_lxc_bridge: vmbr0
+docker_lxc_ip: "192.168.0.20/24"
+docker_lxc_gateway: "192.168.0.1"
+docker_lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
+docker_lxc_template: "local:vztmpl/{{ docker_lxc_template_name }}"
+docker_lxc_onboot: true
+docker_lxc_unprivileged: true
+docker_lxc_features: "nesting=1"
+
+# Mount points (host path -> container path)
+docker_lxc_mounts:
+  - { host: "/tank/media_root", container: "/mnt/media_root" }
+  - { host: "/tank/apps", container: "/mnt/app_config" }
+  - { host: "/tank/nas", container: "/mnt/nas" }
+
+# GPU passthrough for hardware transcoding
+docker_lxc_gpu_passthrough: true

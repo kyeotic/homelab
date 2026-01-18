@@ -1,0 +1,177 @@
+---
+# Install Docker and configure Portainer with persistent storage
+
+# --- Docker Installation ---
+
+- name: Check if Docker is installed
+  command: docker --version
+  register: docker_check
+  failed_when: false
+  changed_when: false
+
+- name: Set Docker fresh install flag
+  set_fact:
+    docker_fresh_install: "{{ docker_check.rc != 0 }}"
+
+- name: Install Docker
+  when: docker_check.rc != 0
+  block:
+    - name: Download Docker install script
+      get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: '0755'
+
+    - name: Run Docker install script
+      command: /tmp/get-docker.sh
+      register: docker_install
+      changed_when: docker_install.rc == 0
+
+    - name: Clean up Docker install script
+      file:
+        path: /tmp/get-docker.sh
+        state: absent
+
+    - name: Enable and start Docker service
+      systemd:
+        name: docker
+        enabled: true
+        state: started
+
+# --- Docker Configuration ---
+
+- name: Configure Docker daemon
+  copy:
+    content: |
+      {
+        "log-driver": "{{ docker_log_driver }}"
+      }
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  register: docker_daemon_config
+  notify: restart docker
+
+- name: Ensure Docker is running
+  systemd:
+    name: docker
+    state: started
+
+# --- Portainer Setup ---
+
+- name: Ensure Portainer data directory exists
+  file:
+    path: "{{ portainer_data_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Check if Portainer container exists
+  command: docker inspect {{ portainer_container_name }}
+  register: portainer_inspect
+  failed_when: false
+  changed_when: false
+
+- name: Get Portainer container volume mounts
+  when: portainer_inspect.rc == 0
+  set_fact:
+    portainer_volumes: "{{ (portainer_inspect.stdout | from_json)[0].Mounts | default([]) }}"
+
+- name: Check if Portainer has correct bind mount
+  when: portainer_inspect.rc == 0
+  set_fact:
+    portainer_has_correct_mount: >-
+      {{ portainer_volumes | selectattr('Destination', 'equalto', '/data')
+         | selectattr('Source', 'equalto', portainer_data_path)
+         | list | length > 0 }}
+
+- name: Stop and remove Portainer with incorrect mount
+  when: portainer_inspect.rc == 0 and not (portainer_has_correct_mount | default(false))
+  block:
+    - name: Stop Portainer container
+      command: docker stop {{ portainer_container_name }}
+      failed_when: false
+
+    - name: Remove Portainer container
+      command: docker rm {{ portainer_container_name }}
+
+- name: Check if Portainer needs to be created
+  command: docker inspect {{ portainer_container_name }}
+  register: portainer_final_check
+  failed_when: false
+  changed_when: false
+
+- name: Create Portainer container with bind mount
+  when: portainer_final_check.rc != 0
+  command: >
+    docker run -d
+    --name {{ portainer_container_name }}
+    --restart always
+    -p {{ portainer_tunnel_port }}:8000
+    -p {{ portainer_https_port }}:9443
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -v {{ portainer_data_path }}:/data
+    {{ portainer_image }}
+  register: portainer_created
+
+- name: Check if Portainer container is running
+  when: portainer_final_check.rc == 0
+  command: docker inspect {{ portainer_container_name }} --format '{{ '{{' }} .State.Running {{ '}}' }}'
+  register: portainer_running
+  changed_when: false
+
+- name: Start Portainer container if not running
+  when: portainer_final_check.rc == 0 and portainer_running.stdout == 'false'
+  command: docker start {{ portainer_container_name }}
+
+# --- Portainer Stack Redeploy ---
+
+- name: Redeploy Portainer stacks
+  when: portainer_api_key and portainer_redeploy_stacks and docker_fresh_install
+  block:
+    - name: Wait for Portainer API to be ready
+      uri:
+        url: "https://localhost:{{ portainer_https_port }}/api/system/status"
+        method: GET
+        headers:
+          X-API-Key: "{{ portainer_api_key }}"
+        validate_certs: false
+        status_code: 200
+      register: portainer_status
+      until: portainer_status.status == 200
+      retries: 30
+      delay: 2
+
+    - name: Get list of stacks
+      uri:
+        url: "https://localhost:{{ portainer_https_port }}/api/stacks"
+        method: GET
+        headers:
+          X-API-Key: "{{ portainer_api_key }}"
+        validate_certs: false
+      register: portainer_stacks
+
+    - name: Stop each stack
+      uri:
+        url: "https://localhost:{{ portainer_https_port }}/api/stacks/{{ item.Id }}/stop?endpointId={{ item.EndpointId }}"
+        method: POST
+        headers:
+          X-API-Key: "{{ portainer_api_key }}"
+        validate_certs: false
+        status_code: [200, 204]
+      loop: "{{ portainer_stacks.json }}"
+      loop_control:
+        label: "{{ item.Name }}"
+      failed_when: false
+
+    - name: Start each stack
+      uri:
+        url: "https://localhost:{{ portainer_https_port }}/api/stacks/{{ item.Id }}/start?endpointId={{ item.EndpointId }}"
+        method: POST
+        headers:
+          X-API-Key: "{{ portainer_api_key }}"
+        validate_certs: false
+        status_code: [200, 204]
+        timeout: 600
+      loop: "{{ portainer_stacks.json }}"
+      loop_control:
+        label: "{{ item.Name }}"
+      failed_when: false

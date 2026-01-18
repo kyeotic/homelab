@@ -11,22 +11,33 @@
   shell: |
     CTID={{ item }}
     STATUS=$(pct status $CTID | awk '{print $2}')
+    SOURCE_HASH=$(md5sum /root/.ssh/authorized_keys | awk '{print $1}')
 
     if [ "$STATUS" = "running" ]; then
       # Container is running - use pct exec
       pct exec $CTID -- mkdir -p /root/.ssh
-      pct push $CTID /root/.ssh/authorized_keys /root/.ssh/authorized_keys --perms 600
-      echo "synced-running"
+      DEST_HASH=$(pct exec $CTID -- md5sum /root/.ssh/authorized_keys 2>/dev/null | awk '{print $1}' || echo "none")
+      if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
+        pct push $CTID /root/.ssh/authorized_keys /root/.ssh/authorized_keys --perms 600
+        echo "changed"
+      else
+        echo "ok"
+      fi
     else
       # Container is stopped - mount, copy, unmount
       pct mount $CTID
       MOUNTPOINT="/var/lib/lxc/${CTID}/rootfs"
       mkdir -p "${MOUNTPOINT}/root/.ssh"
-      cp /root/.ssh/authorized_keys "${MOUNTPOINT}/root/.ssh/authorized_keys"
-      chmod 600 "${MOUNTPOINT}/root/.ssh/authorized_keys"
+      DEST_HASH=$(md5sum "${MOUNTPOINT}/root/.ssh/authorized_keys" 2>/dev/null | awk '{print $1}' || echo "none")
+      if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
+        cp /root/.ssh/authorized_keys "${MOUNTPOINT}/root/.ssh/authorized_keys"
+        chmod 600 "${MOUNTPOINT}/root/.ssh/authorized_keys"
+        echo "changed"
+      else
+        echo "ok"
+      fi
       pct unmount $CTID
-      echo "synced-stopped"
     fi
   loop: "{{ container_ids.stdout_lines }}"
   register: sync_result
-  changed_when: "'synced' in sync_result.stdout"
+  changed_when: "'changed' in sync_result.stdout"

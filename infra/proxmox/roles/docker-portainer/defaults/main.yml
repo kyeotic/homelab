@@ -1,0 +1,14 @@
+---
+# Docker and Portainer configuration
+
+# Portainer settings
+portainer_data_path: /mnt/app_config/portainer
+portainer_image: portainer/portainer-ce:latest
+portainer_container_name: portainer
+portainer_https_port: 9443
+portainer_tunnel_port: 8000
+portainer_api_key: ""  # Set via vault: portainer_api_key
+portainer_redeploy_stacks: true
+
+# Docker settings
+docker_log_driver: journald

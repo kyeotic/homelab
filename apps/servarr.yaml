@@ -93,7 +93,7 @@ services:
       - 3005:3005
       - 8324:8324
       - 32469:32469
-      - 1900:1900/udp
+      # - 1900:1900/udp  # DLNA - conflicts with Home Assistant SSDP
       - 32410:32410/udp
       - 32412:32412/udp
       - 32413:32413/udp
@@ -428,7 +428,7 @@ services:
 ##  Documentation:        https://docs.linuxserver.io/images/docker-readarr
 ###########################################################################
   readarr:
-    image: lscr.io/linuxserver/readarr:develop
+    image: lscr.io/linuxserver/readarr:0.4.18-develop
     container_name: readarr
     restart: unless-stopped
     depends_on:

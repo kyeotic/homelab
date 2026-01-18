@@ -1,0 +1,130 @@
+---
+# Create and configure Docker LXC container
+
+- name: List all LXC containers
+  command: pct list
+  register: pct_list
+  changed_when: false
+
+- name: Find existing container by hostname
+  set_fact:
+    existing_lxc_vmid: >-
+      {{ pct_list.stdout_lines
+         | select('search', '\s' + docker_lxc_hostname + '\s*$')
+         | first | default('')
+         | regex_replace('^\s*(\d+)\s.*', '\1') }}
+
+- name: Set effective VMID
+  set_fact:
+    effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else docker_lxc_vmid }}"
+    lxc_exists: "{{ existing_lxc_vmid | length > 0 }}"
+
+- name: Show detected LXC status
+  debug:
+    msg: "{{ 'Found existing LXC \"' + docker_lxc_hostname + '\" with VMID ' + effective_vmid if lxc_exists else 'No existing LXC found, will create with VMID ' + effective_vmid }}"
+
+- name: Create Docker LXC container
+  when: not lxc_exists
+  block:
+    - name: Check if template exists
+      command: pveam list local
+      register: template_list
+      changed_when: false
+
+    - name: Download container template
+      when: docker_lxc_template_name not in template_list.stdout
+      command: pveam download local {{ docker_lxc_template_name }}
+
+    - name: Prompt for root password
+      pause:
+        prompt: "Enter root password for new Docker LXC container"
+        echo: false
+      register: password_prompt
+
+    - name: Set root password fact
+      set_fact:
+        docker_lxc_root_password: "{{ password_prompt.user_input }}"
+      no_log: true
+
+    - name: Create LXC container
+      command: >
+        pct create {{ effective_vmid }} {{ docker_lxc_template }}
+        --hostname {{ docker_lxc_hostname }}
+        --cores {{ docker_lxc_cores }}
+        --memory {{ docker_lxc_memory }}
+        --swap {{ docker_lxc_swap }}
+        --rootfs {{ docker_lxc_storage }}:{{ docker_lxc_disk }}
+        --net0 name=eth0,bridge={{ docker_lxc_bridge }},firewall=1,ip={{ docker_lxc_ip }},gw={{ docker_lxc_gateway }},type=veth
+        --features {{ docker_lxc_features }}
+        --onboot {{ docker_lxc_onboot | ternary('1', '0') }}
+        --unprivileged {{ docker_lxc_unprivileged | ternary('1', '0') }}
+        --password {{ docker_lxc_root_password }}
+      register: lxc_create
+      no_log: true
+
+    - name: Add mount points
+      command: >
+        pct set {{ effective_vmid }}
+        --mp{{ idx }} {{ item.host }},mp={{ item.container }}
+      loop: "{{ docker_lxc_mounts }}"
+      loop_control:
+        index_var: idx
+
+    - name: Add GPU passthrough configuration
+      when: docker_lxc_gpu_passthrough
+      lineinfile:
+        path: /etc/pve/lxc/{{ effective_vmid }}.conf
+        line: "{{ item }}"
+        state: present
+      loop:
+        - "lxc.cgroup2.devices.allow: c 226:0 rwm"
+        - "lxc.cgroup2.devices.allow: c 226:128 rwm"
+        - "lxc.cgroup2.devices.allow: c 235:* rwm"
+        - "lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir"
+        - "lxc.mount.entry: /dev/dri/renderD128 dev/renderD128 none bind,optional,create=file"
+        - "lxc.mount.entry: /dev/kfd dev/kfd none bind,optional,create=file"
+
+    - name: Add TUN/TAP device passthrough
+      lineinfile:
+        path: /etc/pve/lxc/{{ effective_vmid }}.conf
+        line: "{{ item }}"
+        state: present
+      loop:
+        - "lxc.cgroup2.devices.allow: c 10:200 rwm"
+        - "lxc.mount.entry: /dev/net dev/net none bind,create=dir"
+
+- name: Clear old SSH host key from known_hosts
+  delegate_to: localhost
+  command: ssh-keygen -f ~/.ssh/known_hosts -R "{{ docker_lxc_ip | regex_replace('/.*', '') }}"
+  when: not lxc_exists
+  failed_when: false
+  changed_when: false
+
+- name: Get current LXC status
+  command: pct status {{ effective_vmid }}
+  register: current_status
+  changed_when: false
+
+- name: Start Docker LXC
+  command: pct start {{ effective_vmid }}
+  register: lxc_started
+  when: "'running' not in current_status.stdout"
+
+- name: Wait for Docker LXC to be reachable via SSH
+  wait_for:
+    host: "{{ docker_lxc_ip | regex_replace('/.*', '') }}"
+    port: 22
+    delay: 5
+    timeout: 120
+  when: lxc_started.changed | default(false)
+
+- name: Add new container's host key to known_hosts
+  delegate_to: localhost
+  shell: |
+    for i in 1 2 3 4 5; do
+      ssh-keyscan -H "{{ docker_lxc_ip | regex_replace('/.*', '') }}" >> ~/.ssh/known_hosts && exit 0
+      sleep 2
+    done
+    exit 1
+  when: not lxc_exists
+  changed_when: true

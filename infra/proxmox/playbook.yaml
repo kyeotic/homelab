@@ -11,7 +11,8 @@
     - { role: gpu-access, tags: [setup-proxmox] }
     - { role: zed-discord, tags: [setup-proxmox] }
     - { role: container-restore, tags: [restore-containers] }
-    - { role: container-ssh, tags: [setup-container-ssh, sync, sync-ssh, restore-containers] }
+    - { role: docker-lxc, tags: [setup-docker] }
+    - { role: container-ssh, tags: [setup-container-ssh, setup-docker, sync, sync-ssh, restore-containers] }
   tasks:
     - name: sync restic profile
       tags: [setup-proxmox, sync, sync-restic, restore-containers]
@@ -42,4 +43,5 @@
 - name: Configure Docker
   hosts: docker
   roles:
+    - { role: docker-portainer, tags: [setup-docker] }
     - { role: docker-cleanup, tags: [setup-docker] }
