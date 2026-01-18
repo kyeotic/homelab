@@ -1,0 +1,3 @@
+---
+# Minimum seconds between notifications for similar events
+zed_notify_interval_secs: 86400  # 1 day

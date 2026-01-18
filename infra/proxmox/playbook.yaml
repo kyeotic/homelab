@@ -9,6 +9,7 @@
     - { role: proxmox-storage, tags: [setup-proxmox, restore-containers] }
     - { role: lxc-users, tags: [setup-proxmox] }
     - { role: gpu-access, tags: [setup-proxmox] }
+    - { role: zed-discord, tags: [setup-proxmox] }
     - { role: container-restore, tags: [restore-containers] }
     - { role: container-ssh, tags: [setup-container-ssh, sync, sync-ssh, restore-containers] }
   tasks:

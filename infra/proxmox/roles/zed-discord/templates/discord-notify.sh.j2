@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# ZED Discord Notification Script
+# Sends alerts to Discord webhook for ZFS errors only
+#
+
+WEBHOOK_URL="{{ zed_discord_webhook }}"
+
+[ -z "$WEBHOOK_URL" ] && exit 0
+
+POOL="${ZEVENT_POOL:-unknown}"
+SUBCLASS="${ZEVENT_SUBCLASS:-unknown}"
+VDEV_PATH="${ZEVENT_VDEV_PATH:-}"
+VDEV_STATE="${ZEVENT_VDEV_STATE_STR:-}"
+
+# Only notify on errors
+case "$SUBCLASS" in
+    checksum_error|io_error|data_error)
+        TITLE="⚠️ ZFS Error: $SUBCLASS"
+        DESC="**Pool:** $POOL"
+        [ -n "$VDEV_PATH" ] && DESC="$DESC\n**Device:** $VDEV_PATH"
+        ;;
+    vdev_statechange)
+        case "$VDEV_STATE" in
+            DEGRADED|FAULTED|OFFLINE|REMOVED)
+                TITLE="🔴 ZFS Device $VDEV_STATE"
+                DESC="**Pool:** $POOL\n**Device:** ${VDEV_PATH:-unknown}"
+                ;;
+            *)
+                exit 0
+                ;;
+        esac
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+JSON=$(cat <<EOF
+{
+  "embeds": [{
+    "title": "$TITLE",
+    "description": "$DESC",
+    "color": 16711680,
+    "fields": [{
+      "name": "Host",
+      "value": "$(hostname)",
+      "inline": true
+    }, {
+      "name": "Time",
+      "value": "$(date '+%Y-%m-%d %H:%M:%S')",
+      "inline": true
+    }]
+  }]
+}
+EOF
+)
+
+curl -s -H "Content-Type: application/json" -d "$JSON" "$WEBHOOK_URL" >/dev/null 2>&1
+exit 0

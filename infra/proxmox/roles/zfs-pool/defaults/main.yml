@@ -1,0 +1,65 @@
+---
+# ZFS pool configuration
+zfs_pool_name: tank
+zfs_test_pool_size: 30G
+
+# Pool creation settings (for 'create' action)
+# Set these in inventory or group_vars for your actual disks
+zfs_pool_type: raidz1
+zfs_pool_disks: []
+#  - /dev/disk/by-id/wwn-0x5002538f33112e23
+#  - /dev/disk/by-id/wwn-0x5002538f33112e6f
+#  - /dev/disk/by-id/wwn-0x5002538f33112e27
+#  - /dev/disk/by-id/ata-TEAM_T2532TB_TPBF2308210040501232
+zfs_pool_ashift: 12
+
+# NAS user/group for shared access
+nas_user: nas
+nas_uid: 101000
+nas_group: nas_shares
+nas_gid: 110000
+
+# Dataset definitions
+zfs_datasets:
+  - name: apps
+    owner: "{{ nas_user }}"
+    group: "{{ nas_group }}"
+    mode: "0755"
+
+  - name: container-backups
+    owner: root
+    group: root
+    mode: "0755"
+
+  - name: media_root
+    properties:
+      acltype: posix
+      aclmode: passthrough
+      aclinherit: passthrough
+    owner: "{{ nas_user }}"
+    group: "{{ nas_group }}"
+    mode: "0775"
+    acl:
+      - "g:{{ nas_group }}:rwx"
+
+  - name: nas
+    owner: "101001"  # Maps to container UID 1001 (with 100000 subuid offset)
+    group: "{{ nas_group }}"
+    mode: "0777"
+    # Im not sure if nas should have the ACL, especically the default acl
+    # because syncthing wants to manage permissions on the sync-drive
+    # properties:
+    #   acltype: posix
+    #   aclmode: passthrough
+    #   aclinherit: passthrough
+    # acl:
+    #   - "g:{{ nas_group }}:rwx"
+
+  - name: os
+    properties:
+      acltype: posix
+      aclinherit: discard
+      xattr: "on"
+    owner: root
+    group: root
+    mode: "0755"

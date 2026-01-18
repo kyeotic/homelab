@@ -21,13 +21,21 @@
     path: /etc/apt/sources.list.d/pve-enterprise.sources
   register: pve_enterprise_sources_file
 
+- name: check if pve-enterprise.sources is already disabled
+  ansible.builtin.shell:
+    cmd: grep -q '^Enabled: no' /etc/apt/sources.list.d/pve-enterprise.sources
+  register: pve_sources_disabled
+  changed_when: false
+  failed_when: false
+  when: pve_enterprise_sources_file.stat.exists
+
 - name: disable pve-enterprise.sources repository (DEB822 format)
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/pve-enterprise.sources
     regexp: '^Enabled:'
     line: 'Enabled: no'
     insertafter: '^Types:'
-  when: pve_enterprise_sources_file.stat.exists
+  when: pve_enterprise_sources_file.stat.exists and pve_sources_disabled.rc != 0
 
 - name: check if ceph.list enterprise repository exists
   ansible.builtin.stat:
@@ -46,13 +54,22 @@
     path: /etc/apt/sources.list.d/ceph.sources
   register: ceph_enterprise_sources_file
 
+- name: check if ceph.sources is already disabled
+  ansible.builtin.shell:
+    cmd: grep -q '^Enabled: no' /etc/apt/sources.list.d/ceph.sources
+  register: ceph_sources_disabled
+  changed_when: false
+  failed_when: false
+  when: ceph_enterprise_sources_file.stat.exists
+
 - name: disable ceph.sources enterprise repository (DEB822 format)
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/ceph.sources
     regexp: '^Enabled:'
     line: 'Enabled: no'
     insertafter: '^Types:'
-  when: ceph_enterprise_sources_file.stat.exists
+  when: ceph_enterprise_sources_file.stat.exists and ceph_sources_disabled.rc != 0
+  register: ceph_sources_changed
 
 # === Now safe to do apt operations ===
 
@@ -62,16 +79,19 @@
     filename: pve-no-subscription
     state: present
     update_cache: no
+  register: pve_repo_added
 
-- name: update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: update apt cache and upgrade packages
+  when: pve_repo_added.changed or ceph_sources_changed.changed | default(false)
+  block:
+    - name: update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
 
-- name: upgrade all packages
-  ansible.builtin.apt:
-    upgrade: dist
-  register: apt_upgrade
+    - name: upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+      register: apt_upgrade
 
 # === Subscription nag patch ===
 
