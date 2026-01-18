@@ -35,16 +35,10 @@
       when: docker_lxc_template_name not in template_list.stdout
       command: pveam download local {{ docker_lxc_template_name }}
 
-    - name: Prompt for root password
-      pause:
-        prompt: "Enter root password for new Docker LXC container"
-        echo: false
-      register: password_prompt
-
-    - name: Set root password fact
-      set_fact:
-        docker_lxc_root_password: "{{ password_prompt.user_input }}"
-      no_log: true
+    - name: Verify root password is set
+      fail:
+        msg: "docker_lxc_root_password must be set in vault"
+      when: not docker_lxc_root_password
 
     - name: Create LXC container
       command: >

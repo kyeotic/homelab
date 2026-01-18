@@ -2,42 +2,41 @@
 # Sync SSH authorized_keys to all LXC containers
 # Uses pct mount/unmount to access container filesystems (works with LVM storage)
 
-- name: get list of container IDs
-  shell: pct list | awk 'NR>1 {print $1}'
-  register: container_ids
-  changed_when: false
-
-- name: sync authorized_keys to containers
+- name: sync authorized_keys to all containers
   shell: |
-    CTID={{ item }}
-    STATUS=$(pct status $CTID | awk '{print $2}')
     SOURCE_HASH=$(md5sum /root/.ssh/authorized_keys | awk '{print $1}')
+    CHANGED=0
 
-    if [ "$STATUS" = "running" ]; then
-      # Container is running - use pct exec
-      pct exec $CTID -- mkdir -p /root/.ssh
-      DEST_HASH=$(pct exec $CTID -- md5sum /root/.ssh/authorized_keys 2>/dev/null | awk '{print $1}' || echo "none")
-      if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
-        pct push $CTID /root/.ssh/authorized_keys /root/.ssh/authorized_keys --perms 600
-        echo "changed"
+    sync_container() {
+      CTID=$1
+      STATUS=$(pct status $CTID | awk '{print $2}')
+
+      if [ "$STATUS" = "running" ]; then
+        pct exec $CTID -- mkdir -p /root/.ssh
+        DEST_HASH=$(pct exec $CTID -- md5sum /root/.ssh/authorized_keys 2>/dev/null | awk '{print $1}' || echo "none")
+        if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
+          pct push $CTID /root/.ssh/authorized_keys /root/.ssh/authorized_keys --perms 600
+          echo "changed:$CTID"
+        fi
       else
-        echo "ok"
+        pct mount $CTID
+        MOUNTPOINT="/var/lib/lxc/${CTID}/rootfs"
+        mkdir -p "${MOUNTPOINT}/root/.ssh"
+        DEST_HASH=$(md5sum "${MOUNTPOINT}/root/.ssh/authorized_keys" 2>/dev/null | awk '{print $1}' || echo "none")
+        if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
+          cp /root/.ssh/authorized_keys "${MOUNTPOINT}/root/.ssh/authorized_keys"
+          chmod 600 "${MOUNTPOINT}/root/.ssh/authorized_keys"
+          echo "changed:$CTID"
+        fi
+        pct unmount $CTID
       fi
-    else
-      # Container is stopped - mount, copy, unmount
-      pct mount $CTID
-      MOUNTPOINT="/var/lib/lxc/${CTID}/rootfs"
-      mkdir -p "${MOUNTPOINT}/root/.ssh"
-      DEST_HASH=$(md5sum "${MOUNTPOINT}/root/.ssh/authorized_keys" 2>/dev/null | awk '{print $1}' || echo "none")
-      if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
-        cp /root/.ssh/authorized_keys "${MOUNTPOINT}/root/.ssh/authorized_keys"
-        chmod 600 "${MOUNTPOINT}/root/.ssh/authorized_keys"
-        echo "changed"
-      else
-        echo "ok"
-      fi
-      pct unmount $CTID
-    fi
-  loop: "{{ container_ids.stdout_lines }}"
+    }
+
+    # Run all syncs in parallel
+    for CTID in $(pct list | awk 'NR>1 {print $1}'); do
+      sync_container $CTID &
+    done
+    wait
+
   register: sync_result
-  changed_when: "'changed' in sync_result.stdout"
+  changed_when: "'changed:' in sync_result.stdout"
