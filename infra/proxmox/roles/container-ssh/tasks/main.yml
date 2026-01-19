@@ -12,8 +12,13 @@
 
       if [ "$STATUS" = "running" ]; then
         if ! pct exec $CTID -- test -f "$SCRIPT_PATH"; then
-          pct exec $CTID -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/initialize | sh'
-          echo "installed:$CTID"
+          OUTPUT=$(pct exec $CTID -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/install | sh' 2>&1)
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 0 ] && pct exec $CTID -- test -f "$SCRIPT_PATH"; then
+            echo "installed:$CTID"
+          else
+            echo "failed:$CTID (exit=$EXIT_CODE): $OUTPUT"
+          fi
         fi
       else
         echo "skipped:$CTID (not running)"
