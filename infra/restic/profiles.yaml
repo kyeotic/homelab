@@ -7,7 +7,8 @@ default:
   repository: "rest:https://sd9j6dod:X23NkZv6sobxuAND@sd9j6dod.repo.borgbase.com"
   password-file: "~/restic-password"
   lock-timeout: "30m"
-  force-inactive-lock: true  # Automatically remove stale locks
+  # Automatically remove stale locks
+  force-inactive-lock: true
 
   backup:
     verbose: true
@@ -26,25 +27,25 @@ daily:
   backup:
     tag:
       - "daily"
+    schedule: "*-*-* 04:00"
+    schedule-permission: system
+    run-before:
+      # Don't run daily backup on Mondays (handled by weekly backup)
+      - '[ "$(date +%u)" -ne 1 ] || echo "Skipping daily backup on Monday"'
+      - '[ "$(date +%u)" -ne 1 ] || exit 0'
   retention:
     keep-last: 1
     prune: false
     tag: ["daily"]
-  schedule: "daily, 04:00"
-  schedule-permission: system
-  run-before:
-    # Don't run daily backup on Mondays (handled by weekly backup)
-    - '[ "$(date +%u)" -ne 1 ] || echo "Skipping daily backup on Monday"'
-    - '[ "$(date +%u)" -ne 1 ] || exit 0'
 
 weekly:
   inherit: default
   backup:
     tag:
       - "weekly"
+    schedule: "Mon, 04:00"
+    schedule-permission: system
   retention:
     keep-last: 2
     prune: true
     tag: ["weekly"]
-  schedule: "Mon, 04:00"
-  schedule-permission: system
