@@ -13,12 +13,7 @@
     - { role: container-restore, tags: [restore-containers] }
     - { role: docker-lxc, tags: [setup-docker] }
     - { role: container-ssh, tags: [setup-container-ssh, setup-docker, sync, sync-ssh, restore-containers] }
-  tasks:
-    - name: sync restic profile
-      tags: [setup-proxmox, sync, sync-restic, restore-containers]
-      synchronize:
-        src: ../restic/profiles.yaml
-        dest: /root/profiles.yaml
+    - { role: restic-profile, tags: [setup-proxmox, sync, sync-restic, restore-containers] }
 
 - name: Configure Caddy
   hosts: caddy

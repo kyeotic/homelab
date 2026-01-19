@@ -1,0 +1,5 @@
+---
+# Restic profile configuration
+
+restic_profile_src: ../restic/profiles.yaml
+restic_profile_dest: /root/profiles.yaml

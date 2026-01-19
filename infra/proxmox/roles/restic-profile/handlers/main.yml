@@ -1,0 +1,6 @@
+---
+# Handlers for restic-profile role
+
+- name: register restic schedules
+  command: resticprofile schedule --all
+  listen: register restic schedules
