@@ -1,42 +1,30 @@
 ---
-# Sync SSH authorized_keys to all LXC containers
-# Uses pct mount/unmount to access container filesystems (works with LVM storage)
+# Install SSH key sync script on all LXC containers
+# The sync script fetches managed keys from https://ssh-keys.kye.dev
 
-- name: sync authorized_keys to all containers
+- name: install ssh-keys sync script on all containers
   shell: |
-    SOURCE_HASH=$(md5sum /root/.ssh/authorized_keys | awk '{print $1}')
-    CHANGED=0
+    SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
 
-    sync_container() {
+    install_on_container() {
       CTID=$1
       STATUS=$(pct status $CTID | awk '{print $2}')
 
       if [ "$STATUS" = "running" ]; then
-        pct exec $CTID -- mkdir -p /root/.ssh
-        DEST_HASH=$(pct exec $CTID -- md5sum /root/.ssh/authorized_keys 2>/dev/null | awk '{print $1}' || echo "none")
-        if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
-          pct push $CTID /root/.ssh/authorized_keys /root/.ssh/authorized_keys --perms 600
-          echo "changed:$CTID"
+        if ! pct exec $CTID -- test -f "$SCRIPT_PATH"; then
+          pct exec $CTID -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/initialize | sh'
+          echo "installed:$CTID"
         fi
       else
-        pct mount $CTID
-        MOUNTPOINT="/var/lib/lxc/${CTID}/rootfs"
-        mkdir -p "${MOUNTPOINT}/root/.ssh"
-        DEST_HASH=$(md5sum "${MOUNTPOINT}/root/.ssh/authorized_keys" 2>/dev/null | awk '{print $1}' || echo "none")
-        if [ "$SOURCE_HASH" != "$DEST_HASH" ]; then
-          cp /root/.ssh/authorized_keys "${MOUNTPOINT}/root/.ssh/authorized_keys"
-          chmod 600 "${MOUNTPOINT}/root/.ssh/authorized_keys"
-          echo "changed:$CTID"
-        fi
-        pct unmount $CTID
+        echo "skipped:$CTID (not running)"
       fi
     }
 
-    # Run all syncs in parallel
+    # Run all checks in parallel
     for CTID in $(pct list | awk 'NR>1 {print $1}'); do
-      sync_container $CTID &
+      install_on_container $CTID &
     done
     wait
 
   register: sync_result
-  changed_when: "'changed:' in sync_result.stdout"
+  changed_when: "'installed:' in sync_result.stdout"
