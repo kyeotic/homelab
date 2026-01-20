@@ -1,8 +1,0 @@
----
-# Sync restic profile configuration to Proxmox host
-
-- name: sync restic profile
-  synchronize:
-    src: "{{ restic_profile_src }}"
-    dest: "{{ restic_profile_dest }}"
-  notify: register restic schedules

@@ -15,8 +15,8 @@ just setup                    # Full Ansible playbook run
 just deploy <tag>             # Run specific tag (run without args to list tags)
 just deploy setup-proxmox     # Initial Proxmox setup
 just deploy restore-containers # Restore LXC containers from backup
-just sync                     # Sync all config files (restic, caddy, ssh)
-just sync caddy               # Sync only Caddyfile
+just deploy sync              # Sync all config files (restic, caddy, ssh)
+just deploy sync-caddy        # Sync only Caddyfile
 just test <ip> [tags]         # Test against a different host IP
 ```
 

@@ -1,8 +1,9 @@
 ---
-# Install SSH key sync script on all LXC containers
+# SSH key sync for LXC containers
 # The sync script fetches managed keys from https://ssh-keys.kye.dev
 
 - name: install ssh-keys sync script on all containers
+  tags: [setup-container-ssh, setup-docker, restore-containers]
   shell: |
     SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
 
@@ -31,5 +32,40 @@
     done
     wait
 
+  register: install_result
+  changed_when: "'installed:' in install_result.stdout"
+
+- name: sync ssh keys on all containers
+  tags: [setup-container-ssh, setup-docker, restore-containers, sync, sync-ssh]
+  shell: |
+    SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
+
+    sync_on_container() {
+      CTID=$1
+      STATUS=$(pct status $CTID | awk '{print $2}')
+
+      if [ "$STATUS" = "running" ]; then
+        if pct exec $CTID -- test -f "$SCRIPT_PATH"; then
+          OUTPUT=$(pct exec $CTID -- "$SCRIPT_PATH" 2>&1)
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "$CTID:$OUTPUT"
+          else
+            echo "$CTID:failed (exit=$EXIT_CODE): $OUTPUT"
+          fi
+        else
+          echo "$CTID:skipped (script not installed)"
+        fi
+      else
+        echo "$CTID:skipped (not running)"
+      fi
+    }
+
+    # Run all syncs in parallel
+    for CTID in $(pct list | awk 'NR>1 {print $1}'); do
+      sync_on_container $CTID &
+    done
+    wait
+
   register: sync_result
-  changed_when: "'installed:' in sync_result.stdout"
+  changed_when: "'updated' in sync_result.stdout"

@@ -2,12 +2,14 @@
 # Caddy reverse proxy setup
 
 - name: ensure caddy directory exists
+  tags: [setup-caddy]
   file:
     path: /root/caddy
     state: directory
     mode: '0755'
 
 - name: sync Dockerfile
+  tags: [setup-caddy]
   copy:
     src: ../../../caddy/Dockerfile
     dest: /root/caddy/Dockerfile
@@ -15,6 +17,7 @@
   register: dockerfile_sync
 
 - name: sync compose.yaml
+  tags: [setup-caddy]
   copy:
     src: ../../../caddy/compose.yaml
     dest: /root/caddy/compose.yaml
@@ -22,12 +25,14 @@
   register: compose_sync
 
 - name: build caddy image
+  tags: [setup-caddy]
   command:
     cmd: docker compose build
     chdir: /root/caddy
   when: dockerfile_sync.changed or compose_sync.changed
 
 - name: create env file with secrets
+  tags: [setup-caddy]
   copy:
     content: |
       AWS_ACCESS_KEY={{ aws_access_key }}
@@ -36,6 +41,23 @@
     mode: '0600'
 
 - name: ensure caddy container is running
+  tags: [setup-caddy]
   command:
     cmd: docker compose up -d
     chdir: /root/caddy
+  changed_when: false
+
+- name: sync Caddyfile
+  tags: [setup-caddy, sync, sync-caddy]
+  copy:
+    src: ../../../caddy/Caddyfile
+    dest: /root/caddy/Caddyfile
+    mode: '0644'
+  register: caddyfile_sync
+
+- name: reload caddy config
+  tags: [setup-caddy, sync, sync-caddy]
+  command:
+    cmd: docker compose exec -w /etc/caddy caddy caddy reload
+    chdir: /root/caddy
+  when: caddyfile_sync.changed

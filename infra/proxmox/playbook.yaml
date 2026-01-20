@@ -1,40 +1,25 @@
 ---
 - name: Configure Proxmox
   hosts: proxmox
+  gather_facts: false
   roles:
     - { role: pve-post-install, tags: [setup-proxmox] }
     - { role: proxmox-packages, tags: [setup-proxmox] }
     - { role: zfs-pool, tags: [setup-proxmox, restore-containers] }
-    - { role: restic, tags: [setup-proxmox, restore-containers] }
+    - role: restic
     - { role: proxmox-storage, tags: [setup-proxmox, restore-containers] }
     - { role: lxc-users, tags: [setup-proxmox] }
     - { role: gpu-access, tags: [setup-proxmox] }
     - { role: zed-discord, tags: [setup-proxmox] }
     - { role: container-restore, tags: [restore-containers] }
     - { role: docker-lxc, tags: [setup-docker] }
-    - { role: container-ssh, tags: [setup-container-ssh, setup-docker, sync, sync-ssh, restore-containers] }
-    - { role: restic-profile, tags: [setup-proxmox, sync, sync-restic, restore-containers] }
+    - role: container-ssh
 
 - name: Configure Caddy
   hosts: caddy
   gather_facts: false
   roles:
-    - { role: caddy, tags: [setup-caddy] }
-  tasks:
-    - name: sync Caddyfile
-      tags: [sync, sync-caddy]
-      copy:
-        src: ../caddy/Caddyfile
-        dest: /root/caddy/Caddyfile
-        mode: '0644'
-      register: caddyfile_sync
-
-    - name: reload caddy config
-      tags: [sync, sync-caddy]
-      command:
-        cmd: docker compose exec -w /etc/caddy caddy caddy reload
-        chdir: /root/caddy
-      when: caddyfile_sync.changed
+    - role: caddy
 
 - name: Configure Docker
   hosts: docker
