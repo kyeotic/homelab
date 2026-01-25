@@ -1,6 +1,3 @@
-# The Scrypted docker-compose.yml file typically resides at:
-# ~/.scrypted/docker-compose.yml
-
 services:
     scrypted:
         environment:
@@ -58,28 +55,28 @@ services:
             - ${SCRYPTED_DNS_SERVER_1:-8.8.8.8}
 
     # watchtower manages updates for Scrypted.
-    watchtower:
-        environment:
-            - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN:-env_missing_fallback}
-            - WATCHTOWER_HTTP_API_UPDATE=true
-            - WATCHTOWER_SCOPE=scrypted
-            - WATCHTOWER_HTTP_API_PERIODIC_POLLS=${WATCHTOWER_HTTP_API_PERIODIC_POLLS:-true}
-        image: nickfedor/watchtower
-        container_name: scrypted-watchtower
-        restart: unless-stopped
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-        labels:
-            - "com.centurylinklabs.watchtower.scope=scrypted"
-        ports:
-            # The auto update port 10444 can be configured
-            # Must match the port in the auto update url above.
-            - 10444:8080
-        # check for updates once an hour (interval is in seconds)
-        command: --interval 3600 --cleanup --scope scrypted
+    # watchtower:
+    #     environment:
+    #         - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN:-env_missing_fallback}
+    #         - WATCHTOWER_HTTP_API_UPDATE=true
+    #         - WATCHTOWER_SCOPE=scrypted
+    #         - WATCHTOWER_HTTP_API_PERIODIC_POLLS=${WATCHTOWER_HTTP_API_PERIODIC_POLLS:-true}
+    #     image: nickfedor/watchtower
+    #     container_name: scrypted-watchtower
+    #     restart: unless-stopped
+    #     volumes:
+    #         - /var/run/docker.sock:/var/run/docker.sock
+    #     labels:
+    #         - "com.centurylinklabs.watchtower.scope=scrypted"
+    #     ports:
+    #         # The auto update port 10444 can be configured
+    #         # Must match the port in the auto update url above.
+    #         - 10444:8080
+    #     # check for updates once an hour (interval is in seconds)
+    #     command: --interval 3600 --cleanup --scope scrypted
 
-        # Use global DNS servers to avoid issues with some local DNS servers.
-        # particularly with npm registry, etc.
-        dns:
-            - ${SCRYPTED_DNS_SERVER_0:-1.1.1.1}
-            - ${SCRYPTED_DNS_SERVER_1:-8.8.8.8}
+    #     # Use global DNS servers to avoid issues with some local DNS servers.
+    #     # particularly with npm registry, etc.
+    #     dns:
+    #         - ${SCRYPTED_DNS_SERVER_0:-1.1.1.1}
+    #         - ${SCRYPTED_DNS_SERVER_1:-8.8.8.8}

@@ -104,3 +104,8 @@ dist
 .tern-port
 kubeconfig.yaml
 .ansible-vault
+
+# Python
+__pycache__/
+*.pyc
+ai-plans/

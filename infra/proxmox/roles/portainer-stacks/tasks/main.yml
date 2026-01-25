@@ -1,0 +1,237 @@
+---
+# Deploy Docker Compose stacks to Portainer with env vars from Bitwarden Secrets Manager
+# Requires: bws CLI installed locally (brew install bitwarden/bws/bws)
+
+# --- BWS CLI Check ---
+
+- name: Check if bws CLI is installed locally
+  command: bws --version
+  delegate_to: localhost
+  become: false
+  register: bws_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if bws CLI is not installed
+  fail:
+    msg: "bws CLI is not installed locally. Install with: brew install bitwarden/bws/bws"
+  when: bws_check.rc != 0
+
+# --- Portainer API Setup ---
+
+- name: Wait for Portainer API to be ready
+  uri:
+    url: "{{ portainer_url }}/api/system/status"
+    method: GET
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+    validate_certs: false
+    status_code: 200
+  register: portainer_status
+  until: portainer_status.status == 200
+  retries: 30
+  delay: 2
+  check_mode: false
+
+- name: Get list of existing stacks
+  uri:
+    url: "{{ portainer_url }}/api/stacks"
+    method: GET
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+    validate_certs: false
+  register: existing_stacks
+  check_mode: false
+
+# --- Fetch and Parse BWS Secrets ---
+
+# Filter to only enabled stacks
+- name: Build enabled stacks list
+  set_fact:
+    _all_enabled: "{{ portainer_stacks | selectattr('enabled', 'undefined') | list + portainer_stacks | selectattr('enabled', 'defined') | selectattr('enabled') | list }}"
+
+- name: Apply stack filter if specified
+  set_fact:
+    enabled_stacks: "{{ _all_enabled | selectattr('name', 'equalto', portainer_stack_filter) | list if portainer_stack_filter else _all_enabled }}"
+
+# Fetch secrets from Bitwarden
+- name: Fetch env vars from Bitwarden
+  command: bws secret get {{ item.env_secret_id }} --output json
+  environment:
+    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
+  delegate_to: localhost
+  become: false
+  loop: "{{ enabled_stacks | selectattr('env_secret_id', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name | default(item.compose_file) }}"
+  register: bws_secrets_raw
+  changed_when: false
+  check_mode: false
+  no_log: true
+
+# Parse secrets into dict
+- name: Initialize secrets dict
+  set_fact:
+    bws_secrets_parsed: {}
+
+- name: Parse env vars from Bitwarden secrets
+  set_fact:
+    bws_secrets_parsed: >-
+      {{
+        bws_secrets_parsed | combine({
+          item.item.compose_file: (item.stdout | from_json).value | parse_env
+        })
+      }}
+  loop: "{{ bws_secrets_raw.results }}"
+  loop_control:
+    label: "{{ item.item.name | default(item.item.compose_file) }}"
+  when: item.stdout is defined
+  no_log: true
+
+# --- Build Stack Data ---
+
+- name: Build stack deployment data
+  set_fact:
+    stack_data: >-
+      {{
+        stack_data | default([]) + [{
+          'name': item.name | default(item.compose_file | regex_replace('\.yaml$', '') | basename),
+          'compose_file': item.compose_file,
+          'compose_content': lookup('file', playbook_dir + '/../../apps/' + item.compose_file),
+          'env_list': bws_secrets_parsed[item.compose_file] | default([])
+        }]
+      }}
+  loop: "{{ enabled_stacks }}"
+  loop_control:
+    label: "{{ item.name | default(item.compose_file | regex_replace('\\.yaml$', '') | basename) }}"
+
+- name: Get list of managed stack names
+  set_fact:
+    managed_stack_names: "{{ stack_data | map(attribute='name') | list }}"
+
+# --- Fetch Current Stack State for Comparison ---
+
+- name: Get current stack file content
+  uri:
+    url: "{{ portainer_url }}/api/stacks/{{ (existing_stacks.json | selectattr('Name', 'equalto', item.name) | first).Id }}/file"
+    method: GET
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+    validate_certs: false
+  loop: "{{ stack_data }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
+  register: current_stack_files
+  check_mode: false
+
+- name: Build comparison data for existing stacks
+  set_fact:
+    stack_comparison: >-
+      {{
+        stack_comparison | default({}) | combine({
+          item.name: {
+            'current_content': (current_stack_files.results | selectattr('item.name', 'equalto', item.name) | map(attribute='json.StackFileContent') | first | default('')),
+            'current_env': (existing_stacks.json | selectattr('Name', 'equalto', item.name) | map(attribute='Env') | first | default([])),
+            'new_content': item.compose_content,
+            'new_env': item.env_list,
+            'content_changed': (current_stack_files.results | selectattr('item.name', 'equalto', item.name) | map(attribute='json.StackFileContent') | first | default('')) != item.compose_content,
+            'env_changed': (existing_stacks.json | selectattr('Name', 'equalto', item.name) | map(attribute='Env') | first | default([]) | sort(attribute='name')) != (item.env_list | sort(attribute='name'))
+          }
+        })
+      }}
+  loop: "{{ stack_data }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
+
+# --- Deploy Stacks ---
+
+- name: Create new stacks
+  uri:
+    url: "{{ portainer_url }}/api/stacks/create/standalone/string?endpointId={{ portainer_endpoint_id }}"
+    method: POST
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      stackFileContent: "{{ item.compose_content }}"
+      env: "{{ item.env_list }}"
+    validate_certs: false
+    status_code: [200, 201]
+  loop: "{{ stack_data }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length == 0
+  changed_when: true
+
+- name: Update existing stacks
+  vars:
+    existing_stack: "{{ existing_stacks.json | selectattr('Name', 'equalto', item.name) | first }}"
+  uri:
+    url: "{{ portainer_url }}/api/stacks/{{ existing_stack.Id }}?endpointId={{ existing_stack.EndpointId }}"
+    method: PUT
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      stackFileContent: "{{ item.compose_content }}"
+      env: "{{ item.env_list }}"
+      prune: true
+      pullImage: true
+    validate_certs: false
+    status_code: [200]
+  loop: "{{ stack_data }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
+    - stack_comparison[item.name].content_changed or stack_comparison[item.name].env_changed
+  changed_when: true
+
+- name: Report unchanged stacks
+  debug:
+    msg: "Stack '{{ item.name }}' is unchanged (skipping update)"
+  loop: "{{ stack_data }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
+    - not (stack_comparison[item.name].content_changed or stack_comparison[item.name].env_changed)
+
+# --- Remove Orphaned Stacks (only when deploying all stacks) ---
+
+- name: Find stacks to remove
+  set_fact:
+    stacks_to_remove: "{{ existing_stacks.json | rejectattr('Name', 'in', managed_stack_names) | list }}"
+  when: not portainer_stack_filter
+
+- name: Stop orphaned stacks
+  uri:
+    url: "{{ portainer_url }}/api/stacks/{{ item.Id }}/stop?endpointId={{ item.EndpointId }}"
+    method: POST
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+    validate_certs: false
+    status_code: [200, 204]
+  loop: "{{ stacks_to_remove | default([]) }}"
+  loop_control:
+    label: "{{ item.Name }}"
+  failed_when: false
+  when: not portainer_stack_filter
+
+- name: Remove orphaned stacks
+  uri:
+    url: "{{ portainer_url }}/api/stacks/{{ item.Id }}?endpointId={{ item.EndpointId }}"
+    method: DELETE
+    headers:
+      X-API-Key: "{{ portainer_api_key }}"
+    validate_certs: false
+    status_code: [200, 204]
+  loop: "{{ stacks_to_remove | default([]) }}"
+  loop_control:
+    label: "{{ item.Name }}"
+  when: not portainer_stack_filter

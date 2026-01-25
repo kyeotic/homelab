@@ -1,0 +1,25 @@
+---
+# Bitwarden Secrets Manager configuration
+bws_access_token: "{{ vault_bws_access_token }}"
+
+# Portainer connection (inherit from docker-portainer role or override)
+portainer_url: "https://localhost:{{ portainer_https_port | default(9443) }}"
+portainer_api_key: ""  # Set via vault
+portainer_endpoint_id: 2  # Local Docker endpoint
+
+# Optional: filter to deploy only a specific stack by name
+# Usage: just deploy docker-stacks -e portainer_stack_filter=mealie
+portainer_stack_filter: ""
+
+# Stack definitions - list of stacks to deploy
+portainer_stacks: []
+# Example:
+# portainer_stacks:
+#   - name: mealie                    # Stack name in Portainer
+#     compose_file: mealie.yaml       # Relative to apps/ directory
+#     env_secret_id: "uuid-here"      # Bitwarden secret ID containing env vars
+#     enabled: true                   # Whether to deploy (default: true)
+#   - name: media-stack
+#     compose_file: servarr.yaml
+#     env_secret_id: "uuid-here"
+#     # name defaults to filename without extension if not specified

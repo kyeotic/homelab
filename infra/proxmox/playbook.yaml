@@ -26,4 +26,5 @@
   gather_facts: false
   roles:
     - { role: docker-portainer, tags: [setup-docker] }
+    - { role: portainer-stacks, tags: [setup-docker, docker-stacks] }
     - { role: docker-cleanup, tags: [setup-docker] }

@@ -98,15 +98,9 @@ services:
       - 32412:32412/udp
       - 32413:32413/udp
       - 32414:32414/udp
-    # devices:
-    #   - /dev/dri/renderD128:/dev/dri/renderD128
     # Hardware Acceleration
     devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "106" # Change this to match your "render" host group id and remove this comment
-      - "44" # Change this to match your "video" host group id and remove this comment
-    # End Hardware Acceleration
+      - /dev/dri/renderD128:/dev/dri/renderD128
     restart: unless-stopped
 
 
