@@ -2,6 +2,15 @@
 # Deploy Docker Compose stacks to Portainer with env vars from Bitwarden Secrets Manager
 # Requires: bws CLI installed locally (brew install bitwarden/bws/bws)
 
+# --- Validate Required Variables ---
+
+- name: Validate required variables
+  assert:
+    that:
+      - portainer_api_key | length > 0
+      - bws_access_token | length > 0
+    fail_msg: "portainer_api_key and bws_access_token must be set (via vault)"
+
 # --- BWS CLI Check ---
 
 - name: Check if bws CLI is installed locally
@@ -56,7 +65,8 @@
 
 # Fetch secrets from Bitwarden
 - name: Fetch env vars from Bitwarden
-  command: bws secret get {{ item.env_secret_id }} --output json
+  command:
+    cmd: bws secret get {{ item.env_secret_id }} --output json
   environment:
     BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
   delegate_to: localhost
@@ -68,6 +78,7 @@
   changed_when: false
   check_mode: false
   no_log: true
+  timeout: 30
 
 # Parse secrets into dict
 - name: Initialize secrets dict
@@ -130,14 +141,12 @@
     stack_comparison: >-
       {{
         stack_comparison | default({}) | combine({
-          item.name: {
-            'current_content': (current_stack_files.results | selectattr('item.name', 'equalto', item.name) | map(attribute='json.StackFileContent') | first | default('')),
-            'current_env': (existing_stacks.json | selectattr('Name', 'equalto', item.name) | map(attribute='Env') | first | default([])),
-            'new_content': item.compose_content,
-            'new_env': item.env_list,
-            'content_changed': (current_stack_files.results | selectattr('item.name', 'equalto', item.name) | map(attribute='json.StackFileContent') | first | default('')) != item.compose_content,
-            'env_changed': (existing_stacks.json | selectattr('Name', 'equalto', item.name) | map(attribute='Env') | first | default([]) | sort(attribute='name')) != (item.env_list | sort(attribute='name'))
-          }
+          item.name: item.name | stack_needs_update(
+            current_stack_files.results,
+            existing_stacks.json,
+            item.compose_content,
+            item.env_list
+          )
         })
       }}
   loop: "{{ stack_data }}"
@@ -164,7 +173,9 @@
   loop: "{{ stack_data }}"
   loop_control:
     label: "{{ item.name }}"
-  when: existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length == 0
+  when:
+    - not ansible_check_mode
+    - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length == 0
   changed_when: true
 
 - name: Update existing stacks
@@ -188,19 +199,31 @@
   loop_control:
     label: "{{ item.name }}"
   when:
+    - not ansible_check_mode
     - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
     - stack_comparison[item.name].content_changed or stack_comparison[item.name].env_changed
   changed_when: true
 
+- name: Build list of unchanged stacks
+  set_fact:
+    unchanged_stacks: >-
+      {{
+        stack_data
+        | map(attribute='name')
+        | select('in', stack_comparison.keys() | list)
+        | reject('in', stack_comparison | dict2items
+            | selectattr('value.content_changed')
+            | map(attribute='key') | list)
+        | reject('in', stack_comparison | dict2items
+            | selectattr('value.env_changed')
+            | map(attribute='key') | list)
+        | list
+      }}
+
 - name: Report unchanged stacks
   debug:
-    msg: "Stack '{{ item.name }}' is unchanged (skipping update)"
-  loop: "{{ stack_data }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
-    - not (stack_comparison[item.name].content_changed or stack_comparison[item.name].env_changed)
+    msg: "Unchanged stacks: {{ unchanged_stacks | join(', ') }}"
+  when: unchanged_stacks | length > 0
 
 # --- Remove Orphaned Stacks (only when deploying all stacks) ---
 
@@ -221,7 +244,9 @@
   loop_control:
     label: "{{ item.Name }}"
   failed_when: false
-  when: not portainer_stack_filter
+  when:
+    - not ansible_check_mode
+    - not portainer_stack_filter
 
 - name: Remove orphaned stacks
   uri:
@@ -234,4 +259,6 @@
   loop: "{{ stacks_to_remove | default([]) }}"
   loop_control:
     label: "{{ item.Name }}"
-  when: not portainer_stack_filter
+  when:
+    - not ansible_check_mode
+    - not portainer_stack_filter
