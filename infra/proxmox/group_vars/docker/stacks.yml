@@ -30,3 +30,9 @@ portainer_stacks:
   - name: core-keeper
     compose_file: games/core-keeper.yaml
     env_secret_id: "6fba33db-bc67-46e1-a243-b3dd0001884d"
+
+  # - name: change-detector
+  #   compose_file: change-detector.yaml
+  
+  - name: uptime-kuma
+    compose_file: uptime-kuma.yaml

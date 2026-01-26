@@ -1,0 +1,10 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    restart: unless-stopped
+    volumes:
+      - /mnt/app_config/uptime-kuma:/app/data
+    ports:
+      # <Host Port>:<Container Port>
+      - "5566:3001"
+      # - "3307:3306"

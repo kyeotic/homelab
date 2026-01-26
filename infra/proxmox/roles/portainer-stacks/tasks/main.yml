@@ -136,6 +136,10 @@
   register: current_stack_files
   check_mode: false
 
+- name: Initialize stack comparison dict
+  set_fact:
+    stack_comparison: {}
+
 - name: Build comparison data for existing stacks
   set_fact:
     stack_comparison: >-
@@ -244,6 +248,7 @@
   loop_control:
     label: "{{ item.Name }}"
   failed_when: false
+  changed_when: true
   when:
     - not ansible_check_mode
     - not portainer_stack_filter
@@ -259,6 +264,7 @@
   loop: "{{ stacks_to_remove | default([]) }}"
   loop_control:
     label: "{{ item.Name }}"
+  changed_when: true
   when:
     - not ansible_check_mode
     - not portainer_stack_filter

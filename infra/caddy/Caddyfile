@@ -25,62 +25,62 @@ homelab.kye.dev {
 			region "us-west-2"
 		}
 	}
-
+	
 	@adguard host adguard.local.kye.dev
 	handle @adguard {
 		reverse_proxy 192.168.0.17:80
 	}
-
+	
 	@cockpit host cockpit.local.kye.dev
 	handle @cockpit {
 		reverse_proxy 192.168.0.11:9090
 	}
-
+	
 	@cook host cook.local.kye.dev
 	handle @cook {
 		reverse_proxy 192.168.0.20:3100
 	}
-
+	
 	@gstudio host gstudio.local.kye.dev
 	handle @gstudio {
 		reverse_proxy 192.168.0.25:9000
 	}
-
+	
 	@home host home.local.kye.dev
 	handle @home {
 		reverse_proxy 192.168.0.20:3000
 	}
-
+	
 	@homeassistant host homeassistant.local.kye.dev
 	handle @homeassistant {
 		reverse_proxy 192.168.0.20:8123
 	}
-
+	
 	@jellyfin host jellyfin.local.kye.dev
 	handle @jellyfin {
 		reverse_proxy 192.168.0.20:8096
 	}
-
+	
 	@plex host plex.local.kye.dev
 	handle @plex {
 		reverse_proxy 192.168.0.20:32400
 	}
-
+	
 	@jellyseer host jellyseer.local.kye.dev
 	handle @jellyseer {
 		reverse_proxy 192.168.0.20:5055
 	}
-
+	
 	@movies host movies.local.kye.dev
 	handle @movies {
 		reverse_proxy 192.168.0.20:7878
 	}
-
+	
 	@music host music.local.kye.dev
 	handle @music {
 		reverse_proxy 192.168.0.20:8686
 	}
-
+	
 	@portainer host portainer.local.kye.dev
 	handle @portainer {
 		reverse_proxy https://192.168.0.20:9443 {
@@ -89,57 +89,57 @@ homelab.kye.dev {
 			}
 		}
 	}
-
+	
 	@prowl host prowl.local.kye.dev
 	handle @prowl {
 		reverse_proxy 192.168.0.20:9696
 	}
-
+	
 	@qbit host qbit.local.kye.dev
 	handle @qbit {
 		reverse_proxy 192.168.0.20:8200
 	}
-
+	
 	@subs host subs.local.kye.dev
 	handle @subs {
 		reverse_proxy 192.168.0.20:6767
 	}
-
+	
 	@syncthing host syncthing.local.kye.dev
 	handle @syncthing {
 		reverse_proxy 192.168.0.20:8384
 	}
-
+	
 	@transmission host transmission.local.kye.dev
 	handle @transmission {
 		reverse_proxy 192.168.0.20:9091
 	}
-
+	
 	@tv host tv.local.kye.dev
 	handle @tv {
 		reverse_proxy 192.168.0.20:8989
 	}
-
+	
 	@debrid host debrid.local.kye.dev
 	handle @debrid {
 		reverse_proxy 192.168.0.20:6500
 	}
-
+	
 	@reader host reader.local.kye.dev
 	handle @reader {
 		reverse_proxy 192.168.0.20:8787
 	}
-
+	
 	@calibre host calibre.local.kye.dev
 	handle @calibre {
 		reverse_proxy 192.168.0.20:8083
 	}
-
+	
 	@audiobooks host audiobooks.local.kye.dev
 	handle @audiobooks {
 		reverse_proxy 192.168.0.20:13378
 	}
-
+	
 	@scrypted host scrypted.local.kye.dev
 	handle @scrypted {
 		reverse_proxy https://192.168.0.20:10443 {
@@ -147,5 +147,10 @@ homelab.kye.dev {
 				tls_insecure_skip_verify
 			}
 		}
+	}
+	
+	@change-detector host change-detector.local.kye.dev
+	handle @change-detector {
+		reverse_proxy 192.168.0.20:5566
 	}
 }
