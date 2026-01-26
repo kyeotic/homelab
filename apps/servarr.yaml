@@ -37,6 +37,9 @@ services:
       - "3000:3000/tcp" # firefox
       - "3001:3001/tcp" # firefox
       - "6500:6500" #rdt
+    # NOTE: Gluetun VPN container MUST ONLY connect to the media-network
+    networks:
+      - media-network
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/gluetun:/gluetun
     healthcheck:
@@ -102,12 +105,6 @@ services:
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
     restart: unless-stopped
-
-
-# NOTE: Gluetun VPN container MUST ONLY connect to the media-network
-
-    networks:
-      - media-network
 
 ###########################################################################
 ##  Docker Compose File:  qBittorrent (LinuxServer.io)
