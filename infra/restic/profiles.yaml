@@ -22,6 +22,8 @@ default:
       - "/tank/apps/**/Plex Media Server/Codecs/**"
       - "/tank/apps/**/Plex Media Server/Logs/**"
 
+# Manual test
+# resticprofile -n daily backup -- --tag daily
 daily:
   inherit: default
   backup:
@@ -33,10 +35,11 @@ daily:
       # Don't run daily backup on Mondays (handled by weekly backup)
       - '[ "$(date +%u)" -ne 1 ] || echo "Skipping daily backup on Monday"'
       - '[ "$(date +%u)" -ne 1 ] || exit 0'
-  retention:
+  retention: &daily-retention
     keep-last: 1
-    prune: false
+    prune: true
     tag: ["daily"]
+  forget: *daily-retention
 
 weekly:
   inherit: default
@@ -45,7 +48,8 @@ weekly:
       - "weekly"
     schedule: "Mon, 04:00"
     schedule-permission: system
-  retention:
+  retention: &weekly-retention
     keep-last: 2
     prune: true
     tag: ["weekly"]
+  forget: *weekly-retention
