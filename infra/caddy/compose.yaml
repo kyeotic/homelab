@@ -1,6 +1,7 @@
 services:
   caddy:
-    build: .
+    # build: . # no longer using custom version
+    image: ghcr.io/williamjacksn/caddy-route53:2.10.2-1.6.0
     restart: unless-stopped
     ports:
       - '80:80'
@@ -14,6 +15,11 @@ services:
       # Uses aws ddns role with homelab user
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_ACCESS_SECRET=${AWS_ACCESS_SECRET}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '2m'
+        max-file: '3'
 
 volumes:
   caddy_data:
