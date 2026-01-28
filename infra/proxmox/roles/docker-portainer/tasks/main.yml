@@ -147,7 +147,7 @@
         headers:
           X-API-Key: "{{ portainer_api_key }}"
         validate_certs: false
-      register: portainer_stacks
+      register: _existing_stacks_response
 
     - name: Stop each stack
       uri:
@@ -157,7 +157,7 @@
           X-API-Key: "{{ portainer_api_key }}"
         validate_certs: false
         status_code: [200, 204]
-      loop: "{{ portainer_stacks.json }}"
+      loop: "{{ _existing_stacks_response.json }}"
       loop_control:
         label: "{{ item.Name }}"
       failed_when: false
@@ -171,7 +171,7 @@
         validate_certs: false
         status_code: [200, 204]
         timeout: 600
-      loop: "{{ portainer_stacks.json }}"
+      loop: "{{ _existing_stacks_response.json }}"
       loop_control:
         label: "{{ item.Name }}"
       failed_when: false

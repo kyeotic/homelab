@@ -16,7 +16,7 @@
 
 - name: Set effective VMID
   set_fact:
-    effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else docker_lxc_vmid }}"
+    effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else docker_lxc_vmid | string }}"
     lxc_exists: "{{ existing_lxc_vmid | length > 0 }}"
 
 - name: Show detected LXC status
@@ -103,6 +103,25 @@
   command: pct start {{ effective_vmid }}
   register: lxc_started
   when: "'running' not in current_status.stdout"
+
+- name: Wait for container to be ready
+  pause:
+    seconds: 5
+  when: lxc_started.changed | default(false)
+
+- name: Install SSH key sync script via pct exec
+  shell: |
+    pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/install | sh'
+  register: ssh_install
+  changed_when: true
+  when: not lxc_exists
+
+- name: Sync SSH keys via pct exec
+  shell: |
+    pct exec {{ effective_vmid }} -- /usr/local/bin/sync-ssh-keys
+  register: ssh_sync
+  changed_when: "'updated' in ssh_sync.stdout"
+  when: not lxc_exists
 
 - name: Wait for Docker LXC to be reachable via SSH
   wait_for:
