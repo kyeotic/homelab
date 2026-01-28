@@ -10,6 +10,8 @@
       - acl
       - jq
       - lshw
+      - intel-gpu-tools
+      - drm-info
     state: present
     update_cache: yes
     cache_valid_time: 3600

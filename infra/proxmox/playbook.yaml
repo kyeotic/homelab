@@ -28,3 +28,9 @@
     - { role: docker-portainer, tags: [setup-docker] }
     - { role: portainer-stacks, tags: [setup-docker, docker-stacks] }
     - { role: docker-cleanup, tags: [setup-docker] }
+
+- name: Configure Proxmox Backups
+  hosts: proxmox
+  gather_facts: false
+  roles:
+    - { role: proxmox-backup, tags: [setup-proxmox, setup-backup] }

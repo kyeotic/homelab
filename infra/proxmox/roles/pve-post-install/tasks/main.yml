@@ -102,17 +102,18 @@
 
 - name: check if subscription nag is already patched
   ansible.builtin.shell: |
-    grep -c "void({ //if" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js || echo "0"
+    grep -q "checked_command: function (orig_cmd) { orig_cmd();" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
   register: nag_already_patched
   changed_when: false
+  failed_when: false
   when: proxmoxlib_js.stat.exists
 
 - name: patch subscription nag check
   ansible.builtin.replace:
     path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
-    regexp: 'Ext\.Msg\.show\(\{\s*title:\s*gettext\(.No valid subscription'
-    replace: 'void({ //Ext.Msg.show({ title: gettext("No valid subscription'
-  when: proxmoxlib_js.stat.exists and (nag_already_patched.stdout | trim) == '0'
+    regexp: 'checked_command: function \(orig_cmd\) \{'
+    replace: 'checked_command: function (orig_cmd) { orig_cmd(); return;'
+  when: proxmoxlib_js.stat.exists and nag_already_patched.rc != 0
   notify: restart pveproxy
 
 # === Reboot check ===
