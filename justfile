@@ -8,6 +8,12 @@ setup:
 ansible-vault-edit:
     EDITOR='code --wait'  ansible-vault edit infra/proxmox/group_vars/all/vault.yml --vault-password-file .ansible-vault
 
+# Clear SSH known_hosts entries for all inventory hosts (use before reinstalling systems)
+reset-ssh-hosts:
+    ssh-keygen -f ~/.ssh/known_hosts -R 192.168.0.10
+    ssh-keygen -f ~/.ssh/known_hosts -R 192.168.0.13
+    ssh-keygen -f ~/.ssh/known_hosts -R 192.168.0.20
+
 # Test setup against a different host IP
 # Usage: just test <ip> [tags]
 #   just test 192.168.0.47         - run full setup against test host
