@@ -227,19 +227,6 @@ wget https://github.com/45Drives/cockpit-identities/releases/download/v0.1.12/co
 apt install ./*.deb -y
 ```
 
-#### Cockpit Reverse Proxy
-
-```
-[WebService]
-Origins = https://cockpit.local.kye.dev wss://cockpit.local.kye.dev
-ProtocolHeader = X-Forwarded-Proto
-```
-
-Then Add to the reverse proxy
-
-
-Restart with `systemctl restart cockpit.service`
-
 ### Other Stuff
 
 or maybe

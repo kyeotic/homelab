@@ -1,0 +1,33 @@
+[global]
+   workgroup = WORKGROUP
+   server string = Samba Server
+   server role = standalone server
+   log file = /var/log/samba/log.%m
+   max log size = 50
+   dns proxy = no
+   map to guest = never
+   min protocol = SMB2
+
+   # macOS compatibility (fruit VFS)
+   vfs objects = fruit streams_xattr
+   fruit:metadata = stream
+   fruit:model = MacSamba
+   fruit:posix_rename = yes
+   fruit:veto_appledouble = no
+   fruit:nfs_aces = no
+   fruit:wipe_intentionally_left_blank_rfork = yes
+   fruit:delete_empty_adfiles = yes
+
+{% for share in samba_shares %}
+[{{ share.name }}]
+   path = {{ share.path }}
+   comment = {{ share.comment | default(share.name) }}
+   read only = {{ 'yes' if share.read_only | default(false) else 'no' }}
+   browseable = {{ 'yes' if share.browseable | default(true) else 'no' }}
+   valid users = {{ samba_user }}
+   force user = {{ samba_user }}
+   force group = {{ samba_user }}
+   create mask = 0664
+   directory mask = 0775
+
+{% endfor %}

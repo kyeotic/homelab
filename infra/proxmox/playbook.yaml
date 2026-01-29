@@ -13,6 +13,7 @@
     - { role: zed-discord, tags: [setup-proxmox] }
     - { role: container-restore, tags: [restore-containers] }
     - { role: docker-lxc, tags: [setup-docker] }
+    - { role: samba-lxc, tags: [setup-samba] }
     - role: container-ssh
 
 - name: Configure Caddy
@@ -28,6 +29,12 @@
     - { role: docker-portainer, tags: [setup-docker] }
     - { role: portainer-stacks, tags: [setup-docker, docker-stacks] }
     - { role: docker-cleanup, tags: [setup-docker] }
+
+- name: Configure Samba
+  hosts: samba
+  gather_facts: false
+  roles:
+    - { role: samba-config, tags: [setup-samba, sync-samba] }
 
 - name: Configure Proxmox Backups
   hosts: proxmox

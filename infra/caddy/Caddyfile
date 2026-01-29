@@ -31,11 +31,6 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.17:80
 	}
 	
-	@cockpit host cockpit.local.kye.dev
-	handle @cockpit {
-		reverse_proxy 192.168.0.11:9090
-	}
-	
 	@cook host cook.local.kye.dev
 	handle @cook {
 		reverse_proxy 192.168.0.20:3100

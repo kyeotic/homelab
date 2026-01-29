@@ -1,0 +1,32 @@
+---
+samba_lxc_vmid: 102
+samba_lxc_hostname: kye-nas
+samba_user: tkye
+samba_lxc_ip: "192.168.0.11/24"
+# Bitwarden Secrets Manager secret ID containing the samba password
+samba_bws_secret_id: "c65a3ce8-9145-4c17-9481-b3e1005e9adc"
+
+# Samba share definitions
+samba_shares:
+  - name: nas
+    path: /mnt/nas
+    comment: "NAS Share"
+    read_only: false
+    browseable: true
+  - name: media
+    path: /mnt/media_root
+    comment: "Media Share"
+    read_only: false
+    browseable: true
+  - name: apps
+    path: /mnt/apps
+    comment: "App Config Share"
+    read_only: false
+    browseable: true
+
+
+# Mount points: host -> container mappings
+samba_lxc_mounts:
+  - { host: "/tank/nas", container: "/mnt/nas" }
+  - { host: "/tank/apps", container: "/mnt/apps" }
+  - { host: "/tank/media_root", container: "/mnt/media_root" }

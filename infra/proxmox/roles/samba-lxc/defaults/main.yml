@@ -1,0 +1,24 @@
+---
+# Samba LXC container configuration
+
+samba_lxc_vmid: 105
+samba_lxc_hostname: samba
+samba_lxc_cores: 2
+samba_lxc_memory: 1024
+samba_lxc_swap: 512
+samba_lxc_disk: 8
+samba_lxc_storage: local-lvm
+samba_lxc_bridge: vmbr0
+samba_lxc_ip: "192.168.0.14/24"
+samba_lxc_gateway: "192.168.0.1"
+samba_lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
+samba_lxc_template: "local:vztmpl/{{ samba_lxc_template_name }}"
+samba_lxc_onboot: true
+samba_lxc_unprivileged: true
+
+# Mount points (host path -> container path)
+samba_lxc_mounts:
+  - { host: "/tank/nas", container: "/mnt/nas" }
+
+# Root password for the container - set in vault
+samba_lxc_root_password: ""
