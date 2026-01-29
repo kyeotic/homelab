@@ -5,13 +5,11 @@
   roles:
     - { role: pve-post-install, tags: [setup-proxmox] }
     - { role: proxmox-packages, tags: [setup-proxmox] }
-    - { role: zfs-pool, tags: [setup-proxmox, restore-containers] }
+    - { role: zfs-pool, tags: [setup-proxmox] }
     - role: restic
-    - { role: proxmox-storage, tags: [setup-proxmox, restore-containers] }
     - { role: lxc-users, tags: [setup-proxmox] }
     - { role: gpu-access, tags: [setup-proxmox] }
     - { role: zed-discord, tags: [setup-proxmox] }
-    - { role: container-restore, tags: [restore-containers] }
     - { role: docker-lxc, tags: [setup-docker] }
     - { role: samba-lxc, tags: [setup-samba] }
     - { role: caddy-lxc, tags: [setup-caddy] }
@@ -39,8 +37,3 @@
   roles:
     - { role: samba-config, tags: [setup-samba, sync-samba] }
 
-- name: Configure Proxmox Backups
-  hosts: proxmox
-  gather_facts: false
-  roles:
-    - { role: proxmox-backup, tags: [setup-proxmox, setup-backup] }

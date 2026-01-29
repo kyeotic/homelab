@@ -3,7 +3,7 @@
 # The sync script fetches managed keys from https://ssh-keys.kye.dev
 
 - name: install ssh-keys sync script on all containers
-  tags: [setup-container-ssh, setup-docker, restore-containers]
+  tags: [setup-container-ssh, setup-docker]
   shell: |
     SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
 
@@ -36,7 +36,7 @@
   changed_when: "'installed:' in install_result.stdout"
 
 - name: sync ssh keys on all containers
-  tags: [setup-container-ssh, setup-docker, restore-containers, sync, sync-ssh]
+  tags: [setup-container-ssh, setup-docker, sync, sync-ssh]
   shell: |
     SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
 

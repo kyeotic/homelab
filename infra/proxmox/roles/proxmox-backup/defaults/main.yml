@@ -1,9 +1,0 @@
----
-backup_comment: "everything but docker"
-backup_schedule: "mon 01:00"
-backup_compress: zstd
-backup_mode: snapshot
-backup_storage: container-backups
-backup_vmids: "100,101,102,104"
-backup_keep_last: 1
-backup_notes_template: "{{ '{{guestname}}' }}"

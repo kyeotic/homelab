@@ -14,7 +14,6 @@ All commands run from the repository root using Just (task runner):
 just setup                    # Full Ansible playbook run
 just deploy <tag>             # Run specific tag (run without args to list tags)
 just deploy setup-proxmox     # Initial Proxmox setup
-just deploy restore-containers # Restore LXC containers from backup
 just deploy sync              # Sync all config files (restic, caddy, ssh)
 just deploy sync-caddy        # Sync only Caddyfile
 just test <ip> [tags]         # Test against a different host IP
@@ -39,7 +38,7 @@ infra/proxmox/
 - `caddy-container` (192.168.0.13) - Caddy reverse proxy
 - `docker` (192.168.0.20) - Docker/Portainer host
 
-**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `restore-containers`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`
+**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`
 
 ### Roles
 
@@ -49,11 +48,9 @@ infra/proxmox/
 | proxmox-packages | Package installation |
 | zfs-pool | ZFS pool and dataset creation |
 | restic | Backup configuration with resticprofile |
-| proxmox-storage | Proxmox storage backends |
 | lxc-users | LXC user/group ID mapping |
 | gpu-access | GPU passthrough udev rules |
 | zed-discord | ZFS event notifications to Discord |
-| container-restore | Restore LXC containers from restic |
 | container-ssh | SSH key distribution |
 | caddy | Caddy reverse proxy setup |
 | docker-cleanup | Docker cleanup systemd timer |

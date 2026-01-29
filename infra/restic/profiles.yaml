@@ -13,7 +13,6 @@ default:
   backup:
     verbose: true
     source:
-      - "/tank/container-backups/dump"
       - "/tank/nas"
       - "/tank/apps"
       - "/tank/media_root/media/music"

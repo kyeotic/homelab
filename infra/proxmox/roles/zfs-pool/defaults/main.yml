@@ -26,11 +26,6 @@ zfs_datasets:
     group: "{{ nas_group }}"
     mode: "0755"
 
-  - name: container-backups
-    owner: root
-    group: root
-    mode: "0755"
-
   - name: media_root
     properties:
       acltype: posix
