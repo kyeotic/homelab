@@ -20,5 +20,5 @@ samba_lxc_unprivileged: true
 samba_lxc_mounts:
   - { host: "/tank/nas", container: "/mnt/nas" }
 
-# Root password for the container - set in vault
-samba_lxc_root_password: ""
+# Root password for the container - set in vault as lxc_root_password
+# lxc_root_password: ""

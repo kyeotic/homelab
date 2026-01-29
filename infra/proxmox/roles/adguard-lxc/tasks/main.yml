@@ -37,8 +37,8 @@
 
     - name: Verify root password is set
       fail:
-        msg: "adguard_lxc_root_password must be set in vault"
-      when: not adguard_lxc_root_password
+        msg: "lxc_root_password must be set in vault"
+      when: not lxc_root_password
 
     - name: Create LXC container
       command: >
@@ -52,7 +52,7 @@
         --onboot {{ adguard_lxc_onboot | ternary('1', '0') }}
         --unprivileged {{ adguard_lxc_unprivileged | ternary('1', '0') }}
         --features {{ adguard_lxc_features }}
-        --password {{ adguard_lxc_root_password }}
+        --password {{ lxc_root_password }}
       register: lxc_create
       no_log: true
 

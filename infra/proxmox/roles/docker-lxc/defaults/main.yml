@@ -26,5 +26,5 @@ docker_lxc_mounts:
 # GPU passthrough for hardware transcoding
 docker_lxc_gpu_passthrough: true
 
-# Root password for the container - set in vault
-docker_lxc_root_password: ""
+# Root password for the container - set in vault as lxc_root_password
+# lxc_root_password: ""

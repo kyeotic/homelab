@@ -37,8 +37,8 @@
 
     - name: Verify root password is set
       fail:
-        msg: "docker_lxc_root_password must be set in vault"
-      when: not docker_lxc_root_password
+        msg: "lxc_root_password must be set in vault"
+      when: not lxc_root_password
 
     - name: Create LXC container
       command: >
@@ -52,7 +52,7 @@
         --features {{ docker_lxc_features }}
         --onboot {{ docker_lxc_onboot | ternary('1', '0') }}
         --unprivileged {{ docker_lxc_unprivileged | ternary('1', '0') }}
-        --password {{ docker_lxc_root_password }}
+        --password {{ lxc_root_password }}
       register: lxc_create
       no_log: true
 

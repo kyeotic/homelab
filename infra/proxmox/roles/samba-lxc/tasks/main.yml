@@ -37,8 +37,8 @@
 
     - name: Verify root password is set
       fail:
-        msg: "samba_lxc_root_password must be set in vault"
-      when: not samba_lxc_root_password
+        msg: "lxc_root_password must be set in vault"
+      when: not lxc_root_password
 
     - name: Create LXC container
       command: >
@@ -51,7 +51,7 @@
         --net0 name=eth0,bridge={{ samba_lxc_bridge }},firewall=1,ip={{ samba_lxc_ip }},gw={{ samba_lxc_gateway }},type=veth
         --onboot {{ samba_lxc_onboot | ternary('1', '0') }}
         --unprivileged {{ samba_lxc_unprivileged | ternary('1', '0') }}
-        --password {{ samba_lxc_root_password }}
+        --password {{ lxc_root_password }}
       register: lxc_create
       no_log: true
 
