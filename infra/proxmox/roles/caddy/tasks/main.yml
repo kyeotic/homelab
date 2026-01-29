@@ -40,13 +40,6 @@
     dest: /root/caddy/.env
     mode: '0600'
 
-- name: ensure caddy container is running
-  tags: [setup-caddy]
-  command:
-    cmd: docker compose up -d
-    chdir: /root/caddy
-  changed_when: false
-
 - name: sync Caddyfile
   tags: [setup-caddy, sync, sync-caddy]
   copy:
@@ -54,6 +47,13 @@
     dest: /root/caddy/Caddyfile
     mode: '0644'
   register: caddyfile_sync
+
+- name: ensure caddy container is running
+  tags: [setup-caddy]
+  command:
+    cmd: docker compose up -d
+    chdir: /root/caddy
+  changed_when: false
 
 - name: reload caddy config
   tags: [setup-caddy, sync, sync-caddy]

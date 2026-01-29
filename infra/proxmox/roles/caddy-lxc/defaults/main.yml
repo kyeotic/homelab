@@ -1,0 +1,25 @@
+---
+# Caddy LXC container configuration
+
+caddy_lxc_vmid: 101
+caddy_lxc_hostname: caddy
+caddy_lxc_cores: 2
+caddy_lxc_memory: 2048
+caddy_lxc_swap: 512
+caddy_lxc_disk: 4
+caddy_lxc_storage: local-lvm
+caddy_lxc_bridge: vmbr0
+caddy_lxc_ip: "192.168.0.13/24"
+caddy_lxc_gateway: "192.168.0.1"
+caddy_lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
+caddy_lxc_template: "local:vztmpl/{{ caddy_lxc_template_name }}"
+caddy_lxc_onboot: true
+caddy_lxc_unprivileged: true
+caddy_lxc_features: "nesting=1"
+
+# Mount points (host path -> container path)
+caddy_lxc_mounts:
+  - { host: "/tank/apps/caddy", container: "/mnt/caddy" }
+
+# Root password for the container - set in vault
+caddy_lxc_root_password: ""

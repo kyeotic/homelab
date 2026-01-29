@@ -9,8 +9,7 @@ services:
       - '443:443/udp'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+      - /mnt/caddy:/data/caddy
     environment:
       # Uses aws ddns role with homelab user
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
@@ -21,6 +20,3 @@ services:
         max-size: '2m'
         max-file: '3'
 
-volumes:
-  caddy_data:
-  caddy_config:

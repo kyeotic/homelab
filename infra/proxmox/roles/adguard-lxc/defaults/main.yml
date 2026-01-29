@@ -1,0 +1,25 @@
+---
+# AdGuard LXC container configuration
+
+adguard_lxc_vmid: 100
+adguard_lxc_hostname: adguard
+adguard_lxc_cores: 1
+adguard_lxc_memory: 512
+adguard_lxc_swap: 256
+adguard_lxc_disk: 4
+adguard_lxc_storage: local-lvm
+adguard_lxc_bridge: vmbr0
+adguard_lxc_ip: "192.168.0.17/24"
+adguard_lxc_gateway: "192.168.0.1"
+adguard_lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
+adguard_lxc_template: "local:vztmpl/{{ adguard_lxc_template_name }}"
+adguard_lxc_onboot: true
+adguard_lxc_unprivileged: true
+adguard_lxc_features: "nesting=1"
+
+# Mount points (host path -> container path)
+adguard_lxc_mounts:
+  - { host: "/tank/apps/adguard", container: "/mnt/adguard" }
+
+# Root password for the container - set in vault
+adguard_lxc_root_password: ""

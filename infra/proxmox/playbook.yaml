@@ -14,13 +14,15 @@
     - { role: container-restore, tags: [restore-containers] }
     - { role: docker-lxc, tags: [setup-docker] }
     - { role: samba-lxc, tags: [setup-samba] }
+    - { role: caddy-lxc, tags: [setup-caddy] }
+    - { role: adguard-lxc, tags: [setup-adguard] }
     - role: container-ssh
 
 - name: Configure Caddy
   hosts: caddy
   gather_facts: false
   roles:
-    - role: caddy
+    - { role: caddy, tags: [setup-caddy] }
 
 - name: Configure Docker
   hosts: docker
