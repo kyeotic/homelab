@@ -16,6 +16,7 @@
     - { role: samba-lxc, tags: [setup-samba] }
     - { role: caddy-lxc, tags: [setup-caddy] }
     - { role: adguard-lxc, tags: [setup-adguard] }
+    - { role: tailscale-lxc, tags: [setup-tailscale] }
     - role: container-ssh
 
 - name: Configure Caddy

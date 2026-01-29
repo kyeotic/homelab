@@ -1,0 +1,25 @@
+---
+# Tailscale LXC container configuration
+
+tailscale_lxc_vmid: 104
+tailscale_lxc_hostname: tailscale
+tailscale_lxc_cores: 1
+tailscale_lxc_memory: 2048
+tailscale_lxc_swap: 512
+tailscale_lxc_disk: 8
+tailscale_lxc_storage: local-lvm
+tailscale_lxc_bridge: vmbr0
+tailscale_lxc_ip: "192.168.0.18/24"
+tailscale_lxc_gateway: "192.168.0.1"
+tailscale_lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
+tailscale_lxc_template: "local:vztmpl/{{ tailscale_lxc_template_name }}"
+tailscale_lxc_onboot: true
+tailscale_lxc_unprivileged: true
+tailscale_lxc_features: "nesting=1"
+
+# Mount points (host path -> container path)
+tailscale_lxc_mounts:
+  - { host: "/tank/apps/tailscale-router", container: "/mnt/tailscale-config" }
+
+# Root password for the container - set in vault as lxc_root_password
+# lxc_root_password: ""
