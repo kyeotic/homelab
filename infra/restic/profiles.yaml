@@ -17,9 +17,20 @@ default:
       - "/tank/apps"
       - "/tank/media_root/media/music"
     exclude:
+      # Plex
       - "/tank/apps/**/Plex Media Server/Cache/**"
       - "/tank/apps/**/Plex Media Server/Codecs/**"
       - "/tank/apps/**/Plex Media Server/Logs/**"
+      - "/tank/apps/**/Plex Media Server/Crash Reports/**"
+      - "/tank/apps/**/Plex Media Server/Diagnostics/**"
+      - "/tank/apps/**/Plex Media Server/Drivers/**"
+      - "/tank/apps/**/Plex Media Server/Metadata/**"
+      - "/tank/apps/**/Plex Media Server/Scanners/**"
+      - "/tank/apps/**/Plex Media Server/Updates/**"
+      # recyclarr
+      - "/tank/apps/recyclarr/cache/**"
+      - "/tank/apps/recyclarr/repositories/**"
+      - "/tank/apps/recyclarr/logs/**"
 
 # Manual test
 # resticprofile -n daily backup -- --tag daily
@@ -35,6 +46,7 @@ daily:
       - '[ "$(date +%u)" -ne 1 ] || echo "Skipping daily backup on Monday"'
       - '[ "$(date +%u)" -ne 1 ] || exit 0'
   retention: &daily-retention
+    after-backup: true
     keep-last: 1
     prune: true
     tag: ["daily"]
@@ -48,6 +60,7 @@ weekly:
     schedule: "Mon, 04:00"
     schedule-permission: system
   retention: &weekly-retention
+    after-backup: true
     keep-last: 2
     prune: true
     tag: ["weekly"]
