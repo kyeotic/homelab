@@ -8,6 +8,9 @@ nas_gid: 110000
 samba_lxc_vmid: 102
 samba_lxc_hostname: kye-nas
 samba_user: tkye
+samba_user_uid: 1000
+samba_group_name: nas_shares
+samba_group_gid: 10000
 samba_lxc_ip: "192.168.0.11/24"
 # Bitwarden Secrets Manager secret ID containing the samba password
 samba_bws_secret_id: "c65a3ce8-9145-4c17-9481-b3e1005e9adc"

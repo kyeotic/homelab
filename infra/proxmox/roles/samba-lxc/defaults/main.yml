@@ -15,6 +15,7 @@ samba_lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
 samba_lxc_template: "local:vztmpl/{{ samba_lxc_template_name }}"
 samba_lxc_onboot: true
 samba_lxc_unprivileged: true
+samba_lxc_features: "nesting=1"
 
 # Mount points (host path -> container path)
 samba_lxc_mounts:

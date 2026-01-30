@@ -19,6 +19,7 @@
     lxc_template: "{{ samba_lxc_template }}"
     lxc_onboot: "{{ samba_lxc_onboot }}"
     lxc_unprivileged: "{{ samba_lxc_unprivileged }}"
+    lxc_features: "{{ samba_lxc_features }}"
     lxc_mounts: "{{ samba_lxc_mounts }}"
 
 - name: finish SSH setup for Samba LXC

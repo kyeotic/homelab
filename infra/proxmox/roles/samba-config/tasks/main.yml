@@ -10,7 +10,7 @@
   delegate_to: localhost
   ansible.builtin.command: bws secret get {{ samba_bws_secret_id }} --output json
   environment:
-    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
+    BWS_ACCESS_TOKEN: "{{ vault_bws_access_token }}"
   register: bws_result
   changed_when: false
   no_log: true
@@ -26,12 +26,20 @@
     state: present
     update_cache: true
 
+- name: create nas_shares group
+  ansible.builtin.group:
+    name: "{{ samba_group_name }}"
+    gid: "{{ samba_group_gid }}"
+    state: present
+
 - name: create samba user
   ansible.builtin.user:
     name: "{{ samba_user }}"
+    uid: "{{ samba_user_uid }}"
     shell: /usr/sbin/nologin
     create_home: false
-    system: true
+    groups: "{{ samba_group_name }}"
+    append: true
   register: samba_user_result
 
 - name: set samba password
