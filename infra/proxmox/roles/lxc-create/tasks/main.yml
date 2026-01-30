@@ -1,0 +1,102 @@
+---
+# Shared LXC container creation tasks
+# After this role completes, callers should run service-specific tasks,
+# then include lxc-create/tasks/ssh-setup.yml to finish SSH configuration.
+
+- name: list all LXC containers
+  ansible.builtin.command: pct list
+  register: pct_list
+  changed_when: false
+
+- name: find existing container by hostname
+  ansible.builtin.set_fact:
+    existing_lxc_vmid: >-
+      {{ pct_list.stdout_lines
+         | select('search', '\s' + lxc_hostname + '\s*$')
+         | first | default('')
+         | regex_replace('^\s*(\d+)\s.*', '\1') }}
+
+- name: set effective VMID
+  ansible.builtin.set_fact:
+    effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else lxc_vmid | string }}"
+    lxc_exists: "{{ existing_lxc_vmid | length > 0 }}"
+
+- name: show detected LXC status
+  ansible.builtin.debug:
+    msg: "{{ 'Found existing LXC \"' + lxc_hostname + '\" with VMID ' + effective_vmid if lxc_exists else 'No existing LXC found, will create with VMID ' + effective_vmid }}"
+
+- name: create LXC container
+  when: not lxc_exists
+  block:
+    - name: check if template exists
+      ansible.builtin.command: pveam list local
+      register: template_list
+      changed_when: false
+
+    - name: download container template
+      when: lxc_template_name not in template_list.stdout
+      ansible.builtin.command: pveam download local {{ lxc_template_name }}
+
+    - name: verify root password is set
+      ansible.builtin.fail:
+        msg: "lxc_root_password must be set in vault"
+      when: not lxc_root_password
+
+    - name: create LXC container
+      ansible.builtin.command: >
+        pct create {{ effective_vmid }} {{ lxc_template }}
+        --hostname {{ lxc_hostname }}
+        --cores {{ lxc_cores }}
+        --memory {{ lxc_memory }}
+        --swap {{ lxc_swap }}
+        --rootfs {{ lxc_storage }}:{{ lxc_disk }}
+        --net0 name=eth0,bridge={{ lxc_bridge }},firewall=1,ip={{ lxc_ip }},gw={{ lxc_gateway }},type=veth
+        --onboot {{ lxc_onboot | ternary('1', '0') }}
+        --unprivileged {{ lxc_unprivileged | ternary('1', '0') }}
+        {{ '--features ' + lxc_features if lxc_features else '' }}
+        --password {{ lxc_root_password }}
+      register: lxc_create
+      no_log: true
+
+    - name: add mount points
+      ansible.builtin.command: >
+        pct set {{ effective_vmid }}
+        --mp{{ idx }} {{ item.host }},mp={{ item.container }}
+      loop: "{{ lxc_mounts }}"
+      loop_control:
+        index_var: idx
+
+    - name: add extra LXC configuration lines
+      ansible.builtin.lineinfile:
+        path: /etc/pve/lxc/{{ effective_vmid }}.conf
+        line: "{{ item }}"
+        state: present
+      loop: "{{ lxc_conf_lines }}"
+      when: lxc_conf_lines | length > 0
+
+- name: clear old SSH host key from known_hosts
+  delegate_to: localhost
+  ansible.builtin.command: ssh-keygen -f ~/.ssh/known_hosts -R "{{ lxc_ip | regex_replace('/.*', '') }}"
+  when: not lxc_exists
+  failed_when: false
+  changed_when: false
+
+- name: get current LXC status
+  ansible.builtin.command: pct status {{ effective_vmid }}
+  register: current_status
+  changed_when: false
+
+- name: start LXC container
+  ansible.builtin.command: pct start {{ effective_vmid }}
+  register: lxc_started
+  when: "'running' not in current_status.stdout"
+
+- name: wait for container to be ready
+  ansible.builtin.pause:
+    seconds: 5
+  when: lxc_started is changed
+
+- name: install packages in container
+  ansible.builtin.shell: |
+    pct exec {{ effective_vmid }} -- apt-get update && pct exec {{ effective_vmid }} -- apt-get install -y {{ lxc_packages | join(' ') }}
+  when: not lxc_exists and lxc_packages | length > 0

@@ -1,124 +1,28 @@
 ---
 # Create Samba LXC container
 
-- name: list all LXC containers
-  ansible.builtin.command: pct list
-  register: pct_list
-  changed_when: false
+- name: create and configure Samba LXC
+  ansible.builtin.include_role:
+    name: lxc-create
+  vars:
+    lxc_vmid: "{{ samba_lxc_vmid }}"
+    lxc_hostname: "{{ samba_lxc_hostname }}"
+    lxc_cores: "{{ samba_lxc_cores }}"
+    lxc_memory: "{{ samba_lxc_memory }}"
+    lxc_swap: "{{ samba_lxc_swap }}"
+    lxc_disk: "{{ samba_lxc_disk }}"
+    lxc_storage: "{{ samba_lxc_storage }}"
+    lxc_bridge: "{{ samba_lxc_bridge }}"
+    lxc_ip: "{{ samba_lxc_ip }}"
+    lxc_gateway: "{{ samba_lxc_gateway }}"
+    lxc_template_name: "{{ samba_lxc_template_name }}"
+    lxc_template: "{{ samba_lxc_template }}"
+    lxc_onboot: "{{ samba_lxc_onboot }}"
+    lxc_unprivileged: "{{ samba_lxc_unprivileged }}"
+    lxc_mounts: "{{ samba_lxc_mounts }}"
 
-- name: find existing container by hostname
-  ansible.builtin.set_fact:
-    existing_lxc_vmid: >-
-      {{ pct_list.stdout_lines
-         | select('search', '\s' + samba_lxc_hostname + '\s*$')
-         | first | default('')
-         | regex_replace('^\s*(\d+)\s.*', '\1') }}
-
-- name: set effective VMID
-  ansible.builtin.set_fact:
-    effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else samba_lxc_vmid | string }}"
-    lxc_exists: "{{ existing_lxc_vmid | length > 0 }}"
-
-- name: show detected LXC status
-  ansible.builtin.debug:
-    msg: "{{ 'Found existing LXC \"' + samba_lxc_hostname + '\" with VMID ' + effective_vmid if lxc_exists else 'No existing LXC found, will create with VMID ' + effective_vmid }}"
-
-- name: create Samba LXC container
-  when: not lxc_exists
-  block:
-    - name: check if template exists
-      ansible.builtin.command: pveam list local
-      register: template_list
-      changed_when: false
-
-    - name: download container template
-      when: samba_lxc_template_name not in template_list.stdout
-      ansible.builtin.command: pveam download local {{ samba_lxc_template_name }}
-
-    - name: verify root password is set
-      ansible.builtin.fail:
-        msg: "lxc_root_password must be set in vault"
-      when: not lxc_root_password
-
-    - name: create LXC container
-      ansible.builtin.command: >
-        pct create {{ effective_vmid }} {{ samba_lxc_template }}
-        --hostname {{ samba_lxc_hostname }}
-        --cores {{ samba_lxc_cores }}
-        --memory {{ samba_lxc_memory }}
-        --swap {{ samba_lxc_swap }}
-        --rootfs {{ samba_lxc_storage }}:{{ samba_lxc_disk }}
-        --net0 name=eth0,bridge={{ samba_lxc_bridge }},firewall=1,ip={{ samba_lxc_ip }},gw={{ samba_lxc_gateway }},type=veth
-        --onboot {{ samba_lxc_onboot | ternary('1', '0') }}
-        --unprivileged {{ samba_lxc_unprivileged | ternary('1', '0') }}
-        --password {{ lxc_root_password }}
-      register: lxc_create
-      no_log: true
-
-    - name: add mount points
-      ansible.builtin.command: >
-        pct set {{ effective_vmid }}
-        --mp{{ idx }} {{ item.host }},mp={{ item.container }}
-      loop: "{{ samba_lxc_mounts }}"
-      loop_control:
-        index_var: idx
-
-- name: clear old SSH host key from known_hosts
-  delegate_to: localhost
-  ansible.builtin.command: ssh-keygen -f ~/.ssh/known_hosts -R "{{ samba_lxc_ip | regex_replace('/.*', '') }}"
-  when: not lxc_exists
-  failed_when: false
-  changed_when: false
-
-- name: get current LXC status
-  ansible.builtin.command: pct status {{ effective_vmid }}
-  register: current_status
-  changed_when: false
-
-- name: start Samba LXC
-  ansible.builtin.command: pct start {{ effective_vmid }}
-  register: lxc_started
-  when: "'running' not in current_status.stdout"
-
-- name: wait for container to be ready
-  ansible.builtin.pause:
-    seconds: 5
-  when: lxc_started is changed
-
-- name: install curl in container
-  ansible.builtin.shell: |
-    pct exec {{ effective_vmid }} -- apt-get update && pct exec {{ effective_vmid }} -- apt-get install -y curl openssh-server
-  when: not lxc_exists
-
-- name: install SSH key sync script via pct exec
-  ansible.builtin.shell: |
-    pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/install | sh'
-  register: ssh_install
-  changed_when: true
-  when: not lxc_exists
-
-- name: sync SSH keys via pct exec
-  ansible.builtin.shell: |
-    pct exec {{ effective_vmid }} -- /usr/local/bin/sync-ssh-keys
-  register: ssh_sync
-  changed_when: "'updated' in ssh_sync.stdout"
-  when: not lxc_exists
-
-- name: wait for Samba LXC to be reachable via SSH
-  ansible.builtin.wait_for:
-    host: "{{ samba_lxc_ip | regex_replace('/.*', '') }}"
-    port: 22
-    delay: 5
-    timeout: 120
-  when: lxc_started is changed
-
-- name: add new container's host key to known_hosts
-  delegate_to: localhost
-  ansible.builtin.shell: |
-    for i in 1 2 3 4 5; do
-      ssh-keyscan -H "{{ samba_lxc_ip | regex_replace('/.*', '') }}" >> ~/.ssh/known_hosts && exit 0
-      sleep 2
-    done
-    exit 1
-  when: not lxc_exists
-  changed_when: true
+- name: finish SSH setup for Samba LXC
+  ansible.builtin.include_tasks:
+    file: "{{ role_path }}/../lxc-create/tasks/ssh-setup.yml"
+  vars:
+    lxc_ip: "{{ samba_lxc_ip }}"

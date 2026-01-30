@@ -1,130 +1,34 @@
 ---
 # Create Caddy LXC container
 
-- name: List all LXC containers
-  command: pct list
-  register: pct_list
-  changed_when: false
+- name: create and configure Caddy LXC
+  ansible.builtin.include_role:
+    name: lxc-create
+  vars:
+    lxc_vmid: "{{ caddy_lxc_vmid }}"
+    lxc_hostname: "{{ caddy_lxc_hostname }}"
+    lxc_cores: "{{ caddy_lxc_cores }}"
+    lxc_memory: "{{ caddy_lxc_memory }}"
+    lxc_swap: "{{ caddy_lxc_swap }}"
+    lxc_disk: "{{ caddy_lxc_disk }}"
+    lxc_storage: "{{ caddy_lxc_storage }}"
+    lxc_bridge: "{{ caddy_lxc_bridge }}"
+    lxc_ip: "{{ caddy_lxc_ip }}"
+    lxc_gateway: "{{ caddy_lxc_gateway }}"
+    lxc_template_name: "{{ caddy_lxc_template_name }}"
+    lxc_template: "{{ caddy_lxc_template }}"
+    lxc_onboot: "{{ caddy_lxc_onboot }}"
+    lxc_unprivileged: "{{ caddy_lxc_unprivileged }}"
+    lxc_features: "{{ caddy_lxc_features }}"
+    lxc_mounts: "{{ caddy_lxc_mounts }}"
 
-- name: Find existing container by hostname
-  set_fact:
-    existing_lxc_vmid: >-
-      {{ pct_list.stdout_lines
-         | select('search', '\s' + caddy_lxc_hostname + '\s*$')
-         | first | default('')
-         | regex_replace('^\s*(\d+)\s.*', '\1') }}
-
-- name: Set effective VMID
-  set_fact:
-    effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else caddy_lxc_vmid | string }}"
-    lxc_exists: "{{ existing_lxc_vmid | length > 0 }}"
-
-- name: Show detected LXC status
-  debug:
-    msg: "{{ 'Found existing LXC \"' + caddy_lxc_hostname + '\" with VMID ' + effective_vmid if lxc_exists else 'No existing LXC found, will create with VMID ' + effective_vmid }}"
-
-- name: Create Caddy LXC container
-  when: not lxc_exists
-  block:
-    - name: Check if template exists
-      command: pveam list local
-      register: template_list
-      changed_when: false
-
-    - name: Download container template
-      when: caddy_lxc_template_name not in template_list.stdout
-      command: pveam download local {{ caddy_lxc_template_name }}
-
-    - name: Verify root password is set
-      fail:
-        msg: "lxc_root_password must be set in vault"
-      when: not lxc_root_password
-
-    - name: Create LXC container
-      command: >
-        pct create {{ effective_vmid }} {{ caddy_lxc_template }}
-        --hostname {{ caddy_lxc_hostname }}
-        --cores {{ caddy_lxc_cores }}
-        --memory {{ caddy_lxc_memory }}
-        --swap {{ caddy_lxc_swap }}
-        --rootfs {{ caddy_lxc_storage }}:{{ caddy_lxc_disk }}
-        --net0 name=eth0,bridge={{ caddy_lxc_bridge }},firewall=1,ip={{ caddy_lxc_ip }},gw={{ caddy_lxc_gateway }},type=veth
-        --onboot {{ caddy_lxc_onboot | ternary('1', '0') }}
-        --unprivileged {{ caddy_lxc_unprivileged | ternary('1', '0') }}
-        --features {{ caddy_lxc_features }}
-        --password {{ lxc_root_password }}
-      register: lxc_create
-      no_log: true
-
-    - name: Add mount points
-      command: >
-        pct set {{ effective_vmid }}
-        --mp{{ idx }} {{ item.host }},mp={{ item.container }}
-      loop: "{{ caddy_lxc_mounts }}"
-      loop_control:
-        index_var: idx
-
-- name: Clear old SSH host key from known_hosts
-  delegate_to: localhost
-  command: ssh-keygen -f ~/.ssh/known_hosts -R "{{ caddy_lxc_ip | regex_replace('/.*', '') }}"
-  when: not lxc_exists
-  failed_when: false
-  changed_when: false
-
-- name: Get current LXC status
-  command: pct status {{ effective_vmid }}
-  register: current_status
-  changed_when: false
-
-- name: Start Caddy LXC
-  command: pct start {{ effective_vmid }}
-  register: lxc_started
-  when: "'running' not in current_status.stdout"
-
-- name: Wait for container to be ready
-  pause:
-    seconds: 5
-  when: lxc_started.changed | default(false)
-
-- name: Install curl and openssh-server in container
-  shell: |
-    pct exec {{ effective_vmid }} -- apt-get update && pct exec {{ effective_vmid }} -- apt-get install -y curl openssh-server
-  when: not lxc_exists
-
-- name: Install Docker via official install script
-  shell: |
+- name: install Docker via official install script
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://get.docker.com | sh'
   when: not lxc_exists
 
-- name: Install SSH key sync script via pct exec
-  shell: |
-    pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/install | sh'
-  register: ssh_install
-  changed_when: true
-  when: not lxc_exists
-
-- name: Sync SSH keys via pct exec
-  shell: |
-    pct exec {{ effective_vmid }} -- /usr/local/bin/sync-ssh-keys
-  register: ssh_sync
-  changed_when: "'updated' in ssh_sync.stdout"
-  when: not lxc_exists
-
-- name: Wait for Caddy LXC to be reachable via SSH
-  wait_for:
-    host: "{{ caddy_lxc_ip | regex_replace('/.*', '') }}"
-    port: 22
-    delay: 5
-    timeout: 120
-  when: lxc_started.changed | default(false)
-
-- name: Add new container's host key to known_hosts
-  delegate_to: localhost
-  shell: |
-    for i in 1 2 3 4 5; do
-      ssh-keyscan -H "{{ caddy_lxc_ip | regex_replace('/.*', '') }}" >> ~/.ssh/known_hosts && exit 0
-      sleep 2
-    done
-    exit 1
-  when: not lxc_exists
-  changed_when: true
+- name: finish SSH setup for Caddy LXC
+  ansible.builtin.include_tasks:
+    file: "{{ role_path }}/../lxc-create/tasks/ssh-setup.yml"
+  vars:
+    lxc_ip: "{{ caddy_lxc_ip }}"

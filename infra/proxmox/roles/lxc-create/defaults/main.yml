@@ -1,0 +1,18 @@
+---
+# Shared LXC container defaults
+# Required variables (must be set by caller): lxc_vmid, lxc_hostname, lxc_cores, lxc_memory, lxc_disk, lxc_ip
+
+lxc_template_name: "debian-13-standard_13.1-2_amd64.tar.zst"
+lxc_template: "local:vztmpl/{{ lxc_template_name }}"
+lxc_storage: local-lvm
+lxc_bridge: vmbr0
+lxc_gateway: "192.168.0.1"
+lxc_swap: 512
+lxc_onboot: true
+lxc_unprivileged: true
+lxc_features: ""
+lxc_mounts: []
+lxc_packages:
+  - curl
+  - openssh-server
+lxc_conf_lines: []

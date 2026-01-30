@@ -26,5 +26,24 @@ docker_lxc_mounts:
 # GPU passthrough for hardware transcoding
 docker_lxc_gpu_passthrough: true
 
+# Extra LXC config lines (GPU + TUN/TAP passthrough)
+docker_lxc_conf_lines: >-
+  {{
+    (docker_lxc_gpu_passthrough | ternary(
+      [
+        'lxc.cgroup2.devices.allow: c 226:0 rwm',
+        'lxc.cgroup2.devices.allow: c 226:128 rwm',
+        'lxc.cgroup2.devices.allow: c 235:* rwm',
+        'lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir',
+        'lxc.mount.entry: /dev/dri/renderD128 dev/renderD128 none bind,optional,create=file',
+        'lxc.mount.entry: /dev/kfd dev/kfd none bind,optional,create=file',
+      ], []))
+    +
+    [
+      'lxc.cgroup2.devices.allow: c 10:200 rwm',
+      'lxc.mount.entry: /dev/net dev/net none bind,create=dir',
+    ]
+  }}
+
 # Root password for the container - set in vault as lxc_root_password
 # lxc_root_password: ""

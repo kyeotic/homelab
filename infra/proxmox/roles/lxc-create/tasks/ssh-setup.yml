@@ -1,0 +1,36 @@
+---
+# SSH setup tasks for LXC containers
+# Include this after service-specific tasks are complete.
+
+- name: install SSH key sync script via pct exec
+  ansible.builtin.shell: |
+    pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/install | sh'
+  register: ssh_install
+  changed_when: true
+  when: not lxc_exists
+
+- name: sync SSH keys via pct exec
+  ansible.builtin.shell: |
+    pct exec {{ effective_vmid }} -- /usr/local/bin/sync-ssh-keys
+  register: ssh_sync
+  changed_when: "'updated' in ssh_sync.stdout"
+  when: not lxc_exists
+
+- name: wait for LXC to be reachable via SSH
+  ansible.builtin.wait_for:
+    host: "{{ lxc_ip | regex_replace('/.*', '') }}"
+    port: 22
+    delay: 5
+    timeout: 120
+  when: lxc_started is changed
+
+- name: add new container's host key to known_hosts
+  delegate_to: localhost
+  ansible.builtin.shell: |
+    for i in 1 2 3 4 5; do
+      ssh-keyscan -H "{{ lxc_ip | regex_replace('/.*', '') }}" >> ~/.ssh/known_hosts && exit 0
+      sleep 2
+    done
+    exit 1
+  when: not lxc_exists
+  changed_when: true
