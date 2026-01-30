@@ -115,6 +115,23 @@
   when: proxmoxlib_js.stat.exists and nag_already_patched.rc != 0
   notify: restart pveproxy
 
+# === Root bashrc configuration ===
+
+- name: add history append settings to root bashrc
+  ansible.builtin.blockinfile:
+    path: /root/.bashrc
+    marker: "# {mark} ANSIBLE MANAGED - history settings"
+    block: |
+      # Always append history immediately
+      shopt -s histappend
+      PROMPT_COMMAND='history -a'
+
+- name: add /tank/apps/scripts to root PATH in bashrc
+  ansible.builtin.lineinfile:
+    path: /root/.bashrc
+    line: 'export PATH="$PATH:/tank/apps/scripts"'
+    regexp: 'export PATH=.*\/tank\/apps\/scripts'
+
 # === Reboot check ===
 
 - name: check if reboot is required

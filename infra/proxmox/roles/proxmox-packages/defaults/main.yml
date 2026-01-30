@@ -9,3 +9,4 @@ proxmox_packages:
   - intel-gpu-tools
   - drm-info
   - lm-sensors
+  - tmux
