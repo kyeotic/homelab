@@ -2,27 +2,25 @@
 # Docker cleanup systemd timer for automatic pruning of unused images/containers
 
 - name: copy docker-cleanup service
-  copy:
+  ansible.builtin.copy:
     src: docker-cleanup.service
     dest: /etc/systemd/system/docker-cleanup.service
     mode: '0644'
     owner: root
     group: root
-  register: cleanup_service
   notify: reload systemd
 
 - name: copy docker-cleanup timer
-  copy:
+  ansible.builtin.copy:
     src: docker-cleanup.timer
     dest: /etc/systemd/system/docker-cleanup.timer
     mode: '0644'
     owner: root
     group: root
-  register: cleanup_timer
   notify: reload systemd
 
 - name: enable and start docker-cleanup timer
-  systemd:
+  ansible.builtin.systemd:
     name: docker-cleanup.timer
     enabled: yes
     state: started

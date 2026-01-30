@@ -4,8 +4,9 @@
 
 - name: install ssh-keys sync script on all containers
   tags: [setup-container-ssh, setup-docker]
-  shell: |
+  ansible.builtin.shell: |
     SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
+    FAILED=0
 
     install_on_container() {
       CTID=$1
@@ -18,7 +19,8 @@
           if [ $EXIT_CODE -eq 0 ] && pct exec $CTID -- test -f "$SCRIPT_PATH"; then
             echo "installed:$CTID"
           else
-            echo "failed:$CTID (exit=$EXIT_CODE): $OUTPUT"
+            echo "failed:$CTID (exit=$EXIT_CODE): $OUTPUT" >&2
+            return 1
           fi
         fi
       else
@@ -26,19 +28,19 @@
       fi
     }
 
-    # Run all checks in parallel
     for CTID in $(pct list | awk 'NR>1 {print $1}'); do
-      install_on_container $CTID &
+      install_on_container $CTID || FAILED=1
     done
-    wait
+    exit $FAILED
 
   register: install_result
   changed_when: "'installed:' in install_result.stdout"
 
 - name: sync ssh keys on all containers
   tags: [setup-container-ssh, setup-docker, sync, sync-ssh]
-  shell: |
+  ansible.builtin.shell: |
     SCRIPT_PATH="/usr/local/bin/sync-ssh-keys"
+    FAILED=0
 
     sync_on_container() {
       CTID=$1
@@ -51,7 +53,8 @@
           if [ $EXIT_CODE -eq 0 ]; then
             echo "$CTID:$OUTPUT"
           else
-            echo "$CTID:failed (exit=$EXIT_CODE): $OUTPUT"
+            echo "$CTID:failed (exit=$EXIT_CODE): $OUTPUT" >&2
+            return 1
           fi
         else
           echo "$CTID:skipped (script not installed)"
@@ -61,11 +64,10 @@
       fi
     }
 
-    # Run all syncs in parallel
     for CTID in $(pct list | awk 'NR>1 {print $1}'); do
-      sync_on_container $CTID &
+      sync_on_container $CTID || FAILED=1
     done
-    wait
+    exit $FAILED
 
   register: sync_result
   changed_when: "'updated' in sync_result.stdout"

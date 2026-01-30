@@ -4,8 +4,8 @@
 
 # --- Validate Required Variables ---
 
-- name: Validate required variables
-  assert:
+- name: validate required variables
+  ansible.builtin.assert:
     that:
       - portainer_api_key | length > 0
       - bws_access_token | length > 0
@@ -13,23 +13,23 @@
 
 # --- BWS CLI Check ---
 
-- name: Check if bws CLI is installed locally
-  command: bws --version
+- name: check if bws CLI is installed locally
+  ansible.builtin.command: bws --version
   delegate_to: localhost
   become: false
   register: bws_check
   failed_when: false
   changed_when: false
 
-- name: Fail if bws CLI is not installed
-  fail:
+- name: fail if bws CLI is not installed
+  ansible.builtin.fail:
     msg: "bws CLI is not installed locally. Install with: brew install bitwarden/bws/bws"
   when: bws_check.rc != 0
 
 # --- Portainer API Setup ---
 
-- name: Wait for Portainer API to be ready
-  uri:
+- name: wait for Portainer API to be ready
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/system/status"
     method: GET
     headers:
@@ -42,8 +42,8 @@
   delay: 2
   check_mode: false
 
-- name: Get list of existing stacks
-  uri:
+- name: get list of existing stacks
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/stacks"
     method: GET
     headers:
@@ -55,17 +55,17 @@
 # --- Fetch and Parse BWS Secrets ---
 
 # Filter to only enabled stacks
-- name: Build enabled stacks list
-  set_fact:
+- name: build enabled stacks list
+  ansible.builtin.set_fact:
     _all_enabled: "{{ portainer_stacks | selectattr('enabled', 'undefined') | list + portainer_stacks | selectattr('enabled', 'defined') | selectattr('enabled') | list }}"
 
-- name: Apply stack filter if specified
-  set_fact:
+- name: apply stack filter if specified
+  ansible.builtin.set_fact:
     enabled_stacks: "{{ _all_enabled | selectattr('name', 'equalto', portainer_stack_filter) | list if portainer_stack_filter else _all_enabled }}"
 
 # Fetch secrets from Bitwarden
-- name: Fetch env vars from Bitwarden
-  command:
+- name: fetch env vars from Bitwarden
+  ansible.builtin.command:
     cmd: bws secret get {{ item.env_secret_id }} --output json
   environment:
     BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
@@ -81,12 +81,12 @@
   timeout: 30
 
 # Parse secrets into dict
-- name: Initialize secrets dict
-  set_fact:
+- name: initialize secrets dict
+  ansible.builtin.set_fact:
     bws_secrets_parsed: {}
 
-- name: Parse env vars from Bitwarden secrets
-  set_fact:
+- name: parse env vars from Bitwarden secrets
+  ansible.builtin.set_fact:
     bws_secrets_parsed: >-
       {{
         bws_secrets_parsed | combine({
@@ -101,8 +101,8 @@
 
 # --- Build Stack Data ---
 
-- name: Build stack deployment data
-  set_fact:
+- name: build stack deployment data
+  ansible.builtin.set_fact:
     stack_data: >-
       {{
         stack_data | default([]) + [{
@@ -116,14 +116,14 @@
   loop_control:
     label: "{{ item.name | default(item.compose_file | regex_replace('\\.yaml$', '') | basename) }}"
 
-- name: Get list of managed stack names
-  set_fact:
+- name: get list of managed stack names
+  ansible.builtin.set_fact:
     managed_stack_names: "{{ stack_data | map(attribute='name') | list }}"
 
 # --- Fetch Current Stack State for Comparison ---
 
-- name: Get current stack file content
-  uri:
+- name: get current stack file content
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/stacks/{{ (existing_stacks.json | selectattr('Name', 'equalto', item.name) | first).Id }}/file"
     method: GET
     headers:
@@ -136,12 +136,12 @@
   register: current_stack_files
   check_mode: false
 
-- name: Initialize stack comparison dict
-  set_fact:
+- name: initialize stack comparison dict
+  ansible.builtin.set_fact:
     stack_comparison: {}
 
-- name: Build comparison data for existing stacks
-  set_fact:
+- name: build comparison data for existing stacks
+  ansible.builtin.set_fact:
     stack_comparison: >-
       {{
         stack_comparison | default({}) | combine({
@@ -160,8 +160,8 @@
 
 # --- Deploy Stacks ---
 
-- name: Create new stacks
-  uri:
+- name: create new stacks
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/stacks/create/standalone/string?endpointId={{ portainer_endpoint_id }}"
     method: POST
     headers:
@@ -182,10 +182,10 @@
     - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length == 0
   changed_when: true
 
-- name: Update existing stacks
+- name: update existing stacks
   vars:
     existing_stack: "{{ existing_stacks.json | selectattr('Name', 'equalto', item.name) | first }}"
-  uri:
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/stacks/{{ existing_stack.Id }}?endpointId={{ existing_stack.EndpointId }}"
     method: PUT
     headers:
@@ -208,8 +208,8 @@
     - stack_comparison[item.name].content_changed or stack_comparison[item.name].env_changed
   changed_when: true
 
-- name: Build list of unchanged stacks
-  set_fact:
+- name: build list of unchanged stacks
+  ansible.builtin.set_fact:
     unchanged_stacks: >-
       {{
         stack_data
@@ -224,20 +224,20 @@
         | list
       }}
 
-- name: Report unchanged stacks
-  debug:
+- name: report unchanged stacks
+  ansible.builtin.debug:
     msg: "Unchanged stacks: {{ unchanged_stacks | join(', ') }}"
   when: unchanged_stacks | length > 0
 
 # --- Remove Orphaned Stacks (only when deploying all stacks) ---
 
-- name: Find stacks to remove
-  set_fact:
+- name: find stacks to remove
+  ansible.builtin.set_fact:
     stacks_to_remove: "{{ existing_stacks.json | rejectattr('Name', 'in', managed_stack_names) | list }}"
   when: not portainer_stack_filter
 
-- name: Stop orphaned stacks
-  uri:
+- name: stop orphaned stacks
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/stacks/{{ item.Id }}/stop?endpointId={{ item.EndpointId }}"
     method: POST
     headers:
@@ -253,8 +253,8 @@
     - not ansible_check_mode
     - not portainer_stack_filter
 
-- name: Remove orphaned stacks
-  uri:
+- name: remove orphaned stacks
+  ansible.builtin.uri:
     url: "{{ portainer_url }}/api/stacks/{{ item.Id }}?endpointId={{ item.EndpointId }}"
     method: DELETE
     headers:

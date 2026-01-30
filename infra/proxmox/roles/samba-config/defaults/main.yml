@@ -1,13 +1,3 @@
 ---
 # Samba configuration
-
-samba_user: samba
-samba_bws_secret_id: ""  # Bitwarden secret ID for samba password
-
-# Samba share definitions
-samba_shares:
-  - name: nas
-    path: /mnt/nas
-    comment: "NAS Share"
-    read_only: false
-    browseable: true
+# samba_user, samba_shares, and samba_bws_secret_id are defined in group_vars/all/vars.yml

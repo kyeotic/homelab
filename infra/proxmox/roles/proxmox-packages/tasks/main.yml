@@ -2,16 +2,8 @@
 # Install common packages on Proxmox host
 
 - name: install packages
-  apt:
-    name:
-      - htop
-      - sysstat
-      - radeontop
-      - acl
-      - jq
-      - lshw
-      - intel-gpu-tools
-      - drm-info
+  ansible.builtin.apt:
+    name: "{{ proxmox_packages }}"
     state: present
     update_cache: yes
     cache_valid_time: 3600

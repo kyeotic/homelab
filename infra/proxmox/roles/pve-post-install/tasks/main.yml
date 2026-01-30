@@ -21,21 +21,13 @@
     path: /etc/apt/sources.list.d/pve-enterprise.sources
   register: pve_enterprise_sources_file
 
-- name: check if pve-enterprise.sources is already disabled
-  ansible.builtin.shell:
-    cmd: "grep -q '^Enabled: no' /etc/apt/sources.list.d/pve-enterprise.sources"
-  register: pve_sources_disabled
-  changed_when: false
-  failed_when: false
-  when: pve_enterprise_sources_file.stat.exists
-
 - name: disable pve-enterprise.sources repository (DEB822 format)
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/pve-enterprise.sources
     regexp: '^Enabled:'
     line: 'Enabled: no'
     insertafter: '^Types:'
-  when: pve_enterprise_sources_file.stat.exists and pve_sources_disabled.rc != 0
+  when: pve_enterprise_sources_file.stat.exists
 
 - name: check if ceph.list enterprise repository exists
   ansible.builtin.stat:
@@ -54,35 +46,27 @@
     path: /etc/apt/sources.list.d/ceph.sources
   register: ceph_enterprise_sources_file
 
-- name: check if ceph.sources is already disabled
-  ansible.builtin.shell:
-    cmd: "grep -q '^Enabled: no' /etc/apt/sources.list.d/ceph.sources"
-  register: ceph_sources_disabled
-  changed_when: false
-  failed_when: false
-  when: ceph_enterprise_sources_file.stat.exists
-
 - name: disable ceph.sources enterprise repository (DEB822 format)
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/ceph.sources
     regexp: '^Enabled:'
     line: 'Enabled: no'
     insertafter: '^Types:'
-  when: ceph_enterprise_sources_file.stat.exists and ceph_sources_disabled.rc != 0
+  when: ceph_enterprise_sources_file.stat.exists
   register: ceph_sources_changed
 
 # === Now safe to do apt operations ===
 
 - name: add pve-no-subscription repository
   ansible.builtin.apt_repository:
-    repo: "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription"
+    repo: "{{ pve_no_subscription_repo }}"
     filename: pve-no-subscription
     state: present
     update_cache: no
   register: pve_repo_added
 
 - name: update apt cache and upgrade packages
-  when: pve_repo_added.changed or ceph_sources_changed.changed | default(false)
+  when: pve_repo_added is changed or ceph_sources_changed is changed
   block:
     - name: update apt cache
       ansible.builtin.apt:
@@ -100,9 +84,24 @@
     path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
   register: proxmoxlib_js
 
+- name: get proxmox version
+  ansible.builtin.command: pveversion
+  register: pve_version_output
+  changed_when: false
+  check_mode: false
+
+- name: warn if proxmox major.minor version has changed
+  ansible.builtin.fail:
+    msg: >-
+      Proxmox version '{{ pve_version_output.stdout }}' detected.
+      The subscription nag patch was tested on {{ pve_expected_version_prefix }}x and may need updating.
+  when: proxmoxlib_js.stat.exists and pve_version_output.stdout is not search(pve_expected_version_prefix)
+  ignore_errors: true
+
 - name: check if subscription nag is already patched
-  ansible.builtin.shell: |
-    grep -q "checked_command: function (orig_cmd) { orig_cmd();" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+  ansible.builtin.shell: >
+    grep -q 'checked_command: function (orig_cmd) { orig_cmd(); return;'
+    /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
   register: nag_already_patched
   changed_when: false
   failed_when: false

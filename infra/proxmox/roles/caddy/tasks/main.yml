@@ -3,14 +3,14 @@
 
 - name: ensure caddy directory exists
   tags: [setup-caddy]
-  file:
+  ansible.builtin.file:
     path: /root/caddy
     state: directory
     mode: '0755'
 
 - name: sync Dockerfile
   tags: [setup-caddy]
-  copy:
+  ansible.builtin.copy:
     src: ../../../caddy/Dockerfile
     dest: /root/caddy/Dockerfile
     mode: '0644'
@@ -18,7 +18,7 @@
 
 - name: sync compose.yaml
   tags: [setup-caddy]
-  copy:
+  ansible.builtin.copy:
     src: ../../../caddy/compose.yaml
     dest: /root/caddy/compose.yaml
     mode: '0644'
@@ -26,14 +26,14 @@
 
 - name: build caddy image
   tags: [setup-caddy]
-  command:
+  ansible.builtin.command:
     cmd: docker compose build
     chdir: /root/caddy
   when: dockerfile_sync.changed or compose_sync.changed
 
 - name: create env file with secrets
   tags: [setup-caddy]
-  copy:
+  ansible.builtin.copy:
     content: |
       AWS_ACCESS_KEY={{ aws_access_key }}
       AWS_ACCESS_SECRET={{ aws_access_secret }}
@@ -42,7 +42,7 @@
 
 - name: sync Caddyfile
   tags: [setup-caddy, sync, sync-caddy]
-  copy:
+  ansible.builtin.copy:
     src: ../../../caddy/Caddyfile
     dest: /root/caddy/Caddyfile
     mode: '0644'
@@ -50,14 +50,14 @@
 
 - name: ensure caddy container is running
   tags: [setup-caddy]
-  command:
+  ansible.builtin.command:
     cmd: docker compose up -d
     chdir: /root/caddy
   changed_when: false
 
 - name: reload caddy config
   tags: [setup-caddy, sync, sync-caddy]
-  command:
+  ansible.builtin.command:
     cmd: docker compose exec -T -w /etc/caddy caddy caddy reload
     chdir: /root/caddy
   when: caddyfile_sync.changed

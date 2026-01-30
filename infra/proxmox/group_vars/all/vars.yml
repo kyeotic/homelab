@@ -1,4 +1,10 @@
 ---
+# NAS user/group for shared access (used by zfs-pool, lxc-users, samba)
+nas_user: nas
+nas_uid: 101000
+nas_group: nas_shares
+nas_gid: 110000
+
 samba_lxc_vmid: 102
 samba_lxc_hostname: kye-nas
 samba_user: tkye

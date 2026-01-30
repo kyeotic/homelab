@@ -1,47 +1,47 @@
 ---
 # Create Tailscale LXC container
 
-- name: List all LXC containers
-  command: pct list
+- name: list all LXC containers
+  ansible.builtin.command: pct list
   register: pct_list
   changed_when: false
 
-- name: Find existing container by hostname
-  set_fact:
+- name: find existing container by hostname
+  ansible.builtin.set_fact:
     existing_lxc_vmid: >-
       {{ pct_list.stdout_lines
          | select('search', '\s' + tailscale_lxc_hostname + '\s*$')
          | first | default('')
          | regex_replace('^\s*(\d+)\s.*', '\1') }}
 
-- name: Set effective VMID
-  set_fact:
+- name: set effective VMID
+  ansible.builtin.set_fact:
     effective_vmid: "{{ existing_lxc_vmid if existing_lxc_vmid else tailscale_lxc_vmid | string }}"
     lxc_exists: "{{ existing_lxc_vmid | length > 0 }}"
 
-- name: Show detected LXC status
-  debug:
+- name: show detected LXC status
+  ansible.builtin.debug:
     msg: "{{ 'Found existing LXC \"' + tailscale_lxc_hostname + '\" with VMID ' + effective_vmid if lxc_exists else 'No existing LXC found, will create with VMID ' + effective_vmid }}"
 
-- name: Create Tailscale LXC container
+- name: create Tailscale LXC container
   when: not lxc_exists
   block:
-    - name: Check if template exists
-      command: pveam list local
+    - name: check if template exists
+      ansible.builtin.command: pveam list local
       register: template_list
       changed_when: false
 
-    - name: Download container template
+    - name: download container template
       when: tailscale_lxc_template_name not in template_list.stdout
-      command: pveam download local {{ tailscale_lxc_template_name }}
+      ansible.builtin.command: pveam download local {{ tailscale_lxc_template_name }}
 
-    - name: Verify root password is set
-      fail:
+    - name: verify root password is set
+      ansible.builtin.fail:
         msg: "lxc_root_password must be set in vault"
       when: not lxc_root_password
 
-    - name: Create LXC container
-      command: >
+    - name: create LXC container
+      ansible.builtin.command: >
         pct create {{ effective_vmid }} {{ tailscale_lxc_template }}
         --hostname {{ tailscale_lxc_hostname }}
         --cores {{ tailscale_lxc_cores }}
@@ -56,71 +56,71 @@
       register: lxc_create
       no_log: true
 
-    - name: Add mount points
-      command: >
+    - name: add mount points
+      ansible.builtin.command: >
         pct set {{ effective_vmid }}
         --mp{{ idx }} {{ item.host }},mp={{ item.container }}
       loop: "{{ tailscale_lxc_mounts }}"
       loop_control:
         index_var: idx
 
-    - name: Add /dev/net/tun access to LXC config
-      lineinfile:
+    - name: add /dev/net/tun access to LXC config
+      ansible.builtin.lineinfile:
         path: "/etc/pve/lxc/{{ effective_vmid }}.conf"
         line: "{{ item }}"
       loop:
         - "lxc.cgroup2.devices.allow: c 10:200 rwm"
         - "lxc.mount.entry: /dev/net dev/net none bind,create=dir"
 
-- name: Clear old SSH host key from known_hosts
+- name: clear old SSH host key from known_hosts
   delegate_to: localhost
-  command: ssh-keygen -f ~/.ssh/known_hosts -R "{{ tailscale_lxc_ip | regex_replace('/.*', '') }}"
+  ansible.builtin.command: ssh-keygen -f ~/.ssh/known_hosts -R "{{ tailscale_lxc_ip | regex_replace('/.*', '') }}"
   when: not lxc_exists
   failed_when: false
   changed_when: false
 
-- name: Get current LXC status
-  command: pct status {{ effective_vmid }}
+- name: get current LXC status
+  ansible.builtin.command: pct status {{ effective_vmid }}
   register: current_status
   changed_when: false
 
-- name: Start Tailscale LXC
-  command: pct start {{ effective_vmid }}
+- name: start Tailscale LXC
+  ansible.builtin.command: pct start {{ effective_vmid }}
   register: lxc_started
   when: "'running' not in current_status.stdout"
 
-- name: Wait for container to be ready
-  pause:
+- name: wait for container to be ready
+  ansible.builtin.pause:
     seconds: 5
-  when: lxc_started.changed | default(false)
+  when: lxc_started is changed
 
-- name: Install curl and openssh-server in container
-  shell: |
+- name: install curl and openssh-server in container
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- apt-get update && pct exec {{ effective_vmid }} -- apt-get install -y curl openssh-server jq
   when: not lxc_exists
 
-- name: Add Tailscale apt repository and install
-  shell: |
+- name: add Tailscale apt repository and install
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null'
     pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list'
     pct exec {{ effective_vmid }} -- apt-get update
     pct exec {{ effective_vmid }} -- apt-get install -y tailscale
   when: not lxc_exists
 
-- name: Stop tailscaled before binding state directory
-  shell: |
+- name: stop tailscaled before binding state directory
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- systemctl stop tailscaled
   when: not lxc_exists
 
-- name: Bind mount persistent state over /var/lib/tailscale
-  shell: |
+- name: bind mount persistent state over /var/lib/tailscale
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- sh -c 'rm -rf /var/lib/tailscale && mkdir -p /var/lib/tailscale'
     pct exec {{ effective_vmid }} -- mount --bind /mnt/tailscale-config /var/lib/tailscale
     pct exec {{ effective_vmid }} -- sh -c 'echo "/mnt/tailscale-config /var/lib/tailscale none bind 0 0" >> /etc/fstab'
   when: not lxc_exists
 
-- name: Configure IP forwarding
-  shell: |
+- name: configure IP forwarding
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- sh -c 'cat > /etc/sysctl.d/99-tailscale.conf << EOF
     net.ipv4.ip_forward = 1
     net.ipv6.conf.all.forwarding = 1
@@ -128,14 +128,14 @@
     pct exec {{ effective_vmid }} -- sysctl -p /etc/sysctl.d/99-tailscale.conf
   when: not lxc_exists
 
-- name: Enable and start tailscaled
-  shell: |
+- name: enable and start tailscaled
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- systemctl enable tailscaled
     pct exec {{ effective_vmid }} -- systemctl start tailscaled
   when: not lxc_exists
 
-- name: Create init script for first-time Tailscale authentication
-  shell: |
+- name: create init script for first-time Tailscale authentication
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- sh -c 'cat > /root/init << EOF
     #!/bin/bash
     tailscale up --advertise-routes=192.168.0.0/24
@@ -143,31 +143,31 @@
     pct exec {{ effective_vmid }} -- chmod +x /root/init
   when: not lxc_exists
 
-- name: Install SSH key sync script via pct exec
-  shell: |
+- name: install SSH key sync script via pct exec
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- sh -c 'curl -fsSL https://ssh-keys.kye.dev/install | sh'
   register: ssh_install
   changed_when: true
   when: not lxc_exists
 
-- name: Sync SSH keys via pct exec
-  shell: |
+- name: sync SSH keys via pct exec
+  ansible.builtin.shell: |
     pct exec {{ effective_vmid }} -- /usr/local/bin/sync-ssh-keys
   register: ssh_sync
   changed_when: "'updated' in ssh_sync.stdout"
   when: not lxc_exists
 
-- name: Wait for Tailscale LXC to be reachable via SSH
-  wait_for:
+- name: wait for Tailscale LXC to be reachable via SSH
+  ansible.builtin.wait_for:
     host: "{{ tailscale_lxc_ip | regex_replace('/.*', '') }}"
     port: 22
     delay: 5
     timeout: 120
-  when: lxc_started.changed | default(false)
+  when: lxc_started is changed
 
-- name: Add new container's host key to known_hosts
+- name: add new container's host key to known_hosts
   delegate_to: localhost
-  shell: |
+  ansible.builtin.shell: |
     for i in 1 2 3 4 5; do
       ssh-keyscan -H "{{ tailscale_lxc_ip | regex_replace('/.*', '') }}" >> ~/.ssh/known_hosts && exit 0
       sleep 2

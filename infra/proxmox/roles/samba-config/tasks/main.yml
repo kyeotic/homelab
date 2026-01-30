@@ -1,46 +1,48 @@
 ---
 # Configure Samba inside the LXC container
 
-- name: Verify bws CLI is available
+- name: verify bws CLI is available
   delegate_to: localhost
-  command: which bws
+  ansible.builtin.command: which bws
   changed_when: false
 
-- name: Fetch samba password from Bitwarden Secrets Manager
+- name: fetch samba password from Bitwarden Secrets Manager
   delegate_to: localhost
-  command: bws secret get {{ samba_bws_secret_id }} --output json
+  ansible.builtin.command: bws secret get {{ samba_bws_secret_id }} --output json
+  environment:
+    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
   register: bws_result
   changed_when: false
   no_log: true
 
-- name: Parse samba password
-  set_fact:
+- name: parse samba password
+  ansible.builtin.set_fact:
     samba_password: "{{ (bws_result.stdout | from_json).value }}"
   no_log: true
 
-- name: Install samba
-  apt:
+- name: install samba
+  ansible.builtin.apt:
     name: samba
     state: present
     update_cache: true
 
-- name: Create samba user
-  user:
+- name: create samba user
+  ansible.builtin.user:
     name: "{{ samba_user }}"
     shell: /usr/sbin/nologin
     create_home: false
     system: true
   register: samba_user_result
 
-- name: Set samba password
-  shell: >
+- name: set samba password
+  ansible.builtin.shell: >
     printf '%s\n%s\n' '{{ samba_password }}' '{{ samba_password }}'
     | smbpasswd -s -a {{ samba_user }}
   when: samba_user_result.changed
   no_log: true
 
-- name: Ensure share directories exist with correct ownership
-  file:
+- name: ensure share directories exist with correct ownership
+  ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
     owner: "{{ samba_user }}"
@@ -48,8 +50,8 @@
     mode: "0775"
   loop: "{{ samba_shares }}"
 
-- name: Deploy smb.conf
-  template:
+- name: deploy smb.conf
+  ansible.builtin.template:
     src: smb.conf.j2
     dest: /etc/samba/smb.conf
     owner: root
@@ -57,8 +59,8 @@
     mode: "0644"
   notify: restart smbd
 
-- name: Ensure smbd is enabled and running
-  service:
+- name: ensure smbd is enabled and running
+  ansible.builtin.service:
     name: smbd
     state: started
     enabled: true

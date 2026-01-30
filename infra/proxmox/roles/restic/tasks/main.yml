@@ -11,7 +11,7 @@
 
 - name: create restic password file
   tags: [setup-proxmox, restore-containers]
-  copy:
+  ansible.builtin.copy:
     content: "{{ restic_password }}"
     dest: /root/restic-password
     mode: '0600'
@@ -20,7 +20,7 @@
 
 - name: check if resticprofile is installed
   tags: [setup-proxmox, restore-containers]
-  stat:
+  ansible.builtin.stat:
     path: /usr/local/bin/resticprofile
   register: resticprofile_binary
 
@@ -28,23 +28,23 @@
   tags: [setup-proxmox, restore-containers]
   block:
     - name: download resticprofile install script
-      get_url:
+      ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/creativeprojects/resticprofile/master/install.sh
         dest: /tmp/resticprofile-install.sh
         mode: '0755'
 
     - name: run resticprofile install script
-      command: /tmp/resticprofile-install.sh -b /usr/local/bin
+      ansible.builtin.command: /tmp/resticprofile-install.sh -b /usr/local/bin
 
     - name: cleanup install script
-      file:
+      ansible.builtin.file:
         path: /tmp/resticprofile-install.sh
         state: absent
   when: not resticprofile_binary.stat.exists
 
 - name: sync restic profile
   tags: [setup-proxmox, restore-containers, sync, sync-restic]
-  copy:
+  ansible.builtin.copy:
     src: "{{ restic_profile_src }}"
     dest: "{{ restic_profile_dest }}"
     mode: '0644'

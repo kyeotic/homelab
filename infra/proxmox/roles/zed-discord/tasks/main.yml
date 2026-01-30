@@ -2,7 +2,7 @@
 # ZED Discord notifications for ZFS errors
 
 - name: deploy discord notification script
-  template:
+  ansible.builtin.template:
     src: discord-notify.sh.j2
     dest: /etc/zfs/zed.d/discord-notify.sh
     mode: '0755'
@@ -11,14 +11,14 @@
   notify: restart zed
 
 - name: configure zed notification interval
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/zfs/zed.d/zed.rc
     regexp: '^#?ZED_NOTIFY_INTERVAL_SECS='
     line: 'ZED_NOTIFY_INTERVAL_SECS={{ zed_notify_interval_secs }}'
   notify: restart zed
 
 - name: ensure zed is enabled
-  systemd:
+  ansible.builtin.systemd:
     name: zfs-zed
     enabled: yes
     state: started

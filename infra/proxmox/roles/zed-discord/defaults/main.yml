@@ -1,3 +1,5 @@
 ---
+# Discord webhook URL for ZFS notifications (set in vault)
+zed_discord_webhook: ""
 # Minimum seconds between notifications for similar events
 zed_notify_interval_secs: 86400  # 1 day

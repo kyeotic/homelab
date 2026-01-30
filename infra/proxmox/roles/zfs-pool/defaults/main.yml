@@ -13,12 +13,6 @@ zfs_pool_disks: []
 #  - /dev/disk/by-id/ata-TEAM_T2532TB_TPBF2308210040501232
 zfs_pool_ashift: 12
 
-# NAS user/group for shared access
-nas_user: nas
-nas_uid: 101000
-nas_group: nas_shares
-nas_gid: 110000
-
 # Dataset definitions
 zfs_datasets:
   - name: apps
@@ -41,7 +35,7 @@ zfs_datasets:
     owner: "101001"  # Maps to container UID 1001 (with 100000 subuid offset)
     group: "{{ nas_group }}"
     mode: "0777"
-    # Im not sure if nas should have the ACL, especically the default acl
+    # Im not sure if nas should have the ACL, especially the default acl
     # because syncthing wants to manage permissions on the sync-drive
     # properties:
     #   acltype: posix

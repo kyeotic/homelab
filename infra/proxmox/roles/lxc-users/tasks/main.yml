@@ -2,16 +2,16 @@
 # LXC virtual users for container mapping
 
 - name: create nas_shares group for lxc mapping
-  group:
-    name: nas_shares
-    gid: 110000
+  ansible.builtin.group:
+    name: "{{ nas_group }}"
+    gid: "{{ nas_gid }}"
     state: present
 
 - name: create nas user for lxc mapping
-  user:
-    name: nas
-    uid: 101000
-    group: nas_shares
+  ansible.builtin.user:
+    name: "{{ nas_user }}"
+    uid: "{{ nas_uid }}"
+    group: "{{ nas_group }}"
     create_home: yes
     shell: /bin/bash
     state: present
