@@ -248,42 +248,16 @@
     msg: "Unchanged stacks: {{ unchanged_stacks | join(', ') }}"
   when: unchanged_stacks | length > 0
 
-# --- Remove Orphaned Stacks (only when deploying all stacks) ---
+# --- Report Unmanaged Stacks ---
 
-- name: find stacks to remove
+- name: find unmanaged stacks
   ansible.builtin.set_fact:
-    stacks_to_remove: "{{ existing_stacks.json | rejectattr('Name', 'in', managed_stack_names) | list }}"
+    unmanaged_stacks: "{{ existing_stacks.json | rejectattr('Name', 'in', managed_stack_names) | map(attribute='Name') | list }}"
   when: not portainer_stack_filter
 
-- name: stop orphaned stacks
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/stacks/{{ item.Id }}/stop?endpointId={{ item.EndpointId }}"
-    method: POST
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-    validate_certs: false
-    status_code: [200, 204]
-  loop: "{{ stacks_to_remove | default([]) }}"
-  loop_control:
-    label: "{{ item.Name }}"
-  failed_when: false
-  changed_when: true
+- name: report unmanaged stacks
+  ansible.builtin.debug:
+    msg: "Unmanaged stacks (remove manually if no longer needed): {{ unmanaged_stacks | join(', ') }}"
   when:
-    - not ansible_check_mode
     - not portainer_stack_filter
-
-- name: remove orphaned stacks
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/stacks/{{ item.Id }}?endpointId={{ item.EndpointId }}"
-    method: DELETE
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-    validate_certs: false
-    status_code: [200, 204]
-  loop: "{{ stacks_to_remove | default([]) }}"
-  loop_control:
-    label: "{{ item.Name }}"
-  changed_when: true
-  when:
-    - not ansible_check_mode
-    - not portainer_stack_filter
+    - unmanaged_stacks | default([]) | length > 0
