@@ -11,28 +11,27 @@ This document details the network design for the homelab.
 
 ## Static Leases (Reserved IPs)
 
-| Name        | IP            | Description                  |
-| ----------- | ------------- | ---------------------------- |
-| Gateway     | 192.168.0.1   | Primary Gateway              |
-| Printer     | 192.168.0.9   | Brother Printer              |
-| Proxmox     | 192.168.0.10  | Promox Server                |
-| NAS         | 192.168.0.11  | Debian NAS/SMB Server        |
-| nginx       | 192.168.0.12  | NGINX (Deprecated for caddy) |
-| caddy       | 192.168.0.13  | Caddy (Reverse Proxy)        |
-| Plex        | 192.168.0.14  | Plex                         |
-| HOAS        | 192.168.0.15  | Home Assistant OS            |
-| AdGuard     | 192.168.0.17  | Pi Hole DNS Blocker          |
-| VPN         | 192.168.0.18  | Tailscale Router             |
-| PBS         | 192.168.0.19  | Proxmox Backup Server        |
-| Portainer   | 192.168.0.20  | Docker and Portainer         |
-| Mealie      | 192.168.0.21  | Mealie                       |
-| Games       | 192.168.0.25  | Game Server LXC              |
-| Kye-1       | 192.168.0.100 | Tims Main PC                 |
-| Kate        | 192.168.0.105 | Kate's iPhone                |
-| KyeNAS      | 192.168.0.200 | Old Synology NAS, deprecated |
-| Ionir       | 192.168.0.201 | Tims iPhone                  |
-| Kate iPhone | 192.168.0.202 | Kates iPhone                 |
-| Coen iPhone | 192.168.0.203 | Coens iPhone                 |
+| Name         | IP              | Description                                  |
+| ------------ | --------------- | -------------------------------------------- |
+| Gateway      | 192.168.0.1     | Primary Gateway                              |
+| Printer      | 192.168.0.9     | Brother Printer                              |
+| Proxmox      | 192.168.0.10    | Promox Server                                |
+| NAS          | 192.168.0.11    | Debian NAS/SMB                               |
+| nginx        | 192.168.0.12    | NGINX (Deprecated for caddy)                 |
+| caddy        | 192.168.0.13    | Caddy (Reverse Proxy)                        |
+| Plex         | 192.168.0.14    | Plex (Deprecated, on docker now)             |
+| HOAS         | 192.168.0.15    | Home Assistant OS(Deprecated, on docker now) |
+| AdGuard      | 192.168.0.17    | DNS Blocker                                  |
+| VPN          | 192.168.0.18    | Tailscale Router                             |
+| PBS          | 192.168.0.19    | Proxmox Backup Server                        |
+| Portainer    | 192.168.0.20    | Docker and Portainer                         |
+| Coen's Range | 192.168.0.21-30 | Coen's IP Range for local devices            |
+| Kye-1        | 192.168.0.100   | Tims Main PC                                 |
+| Kate         | 192.168.0.105   | Kate's iPhone                                |
+| KyeNAS       | 192.168.0.200   | Old Synology NAS, deprecated                 |
+| Ionir        | 192.168.0.201   | Tims iPhone                                  |
+| Kate iPhone  | 192.168.0.202   | Kates iPhone                                 |
+| Coen iPhone  | 192.168.0.203   | Coens iPhone                                 |
 
 
 ## Utilities
