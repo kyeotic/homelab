@@ -2,15 +2,6 @@
 # Deploy Docker Compose stacks to Portainer with env vars from Bitwarden Secrets Manager
 # Requires: bws CLI installed locally (brew install bitwarden/bws/bws)
 
-# --- Validate Required Variables ---
-
-- name: validate required variables
-  ansible.builtin.assert:
-    that:
-      - portainer_api_key | length > 0
-      - bws_access_token | length > 0
-    fail_msg: "portainer_api_key and bws_access_token must be set (via vault)"
-
 # --- BWS CLI Check ---
 
 - name: check if bws CLI is installed locally
@@ -25,6 +16,34 @@
   ansible.builtin.fail:
     msg: "bws CLI is not installed locally. Install with: brew install bitwarden/bws/bws"
   when: bws_check.rc != 0
+
+# --- Fetch Portainer API Key from BWS (if not already set by docker-portainer) ---
+
+- name: fetch portainer API key from Bitwarden Secrets Manager
+  delegate_to: localhost
+  become: false
+  ansible.builtin.command: bws secret get {{ portainer_bws_secret_id }} --output json
+  environment:
+    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
+  register: bws_api_key_result
+  changed_when: false
+  no_log: true
+  when: portainer_api_key | length == 0
+
+- name: parse portainer API key
+  ansible.builtin.set_fact:
+    portainer_api_key: "{{ (bws_api_key_result.stdout | from_json).value }}"
+  no_log: true
+  when: portainer_api_key | length == 0
+
+# --- Validate Required Variables ---
+
+- name: validate required variables
+  ansible.builtin.assert:
+    that:
+      - portainer_api_key | length > 0
+      - bws_access_token | length > 0
+    fail_msg: "portainer_api_key and bws_access_token must be set"
 
 # --- Portainer API Setup ---
 

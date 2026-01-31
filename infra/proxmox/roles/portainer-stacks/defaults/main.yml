@@ -4,7 +4,7 @@ bws_access_token: "{{ vault_bws_access_token }}"
 
 # Portainer connection (inherit from docker-portainer role or override)
 portainer_url: "https://localhost:{{ portainer_https_port | default(9443) }}"
-portainer_api_key: "{{ vault_portainer_api_key }}"
+portainer_api_key: ""
 portainer_endpoint_id: 2  # Local Docker endpoint
 
 # Optional: filter to deploy only a specific stack by name

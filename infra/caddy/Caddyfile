@@ -148,4 +148,9 @@ homelab.kye.dev {
 	handle @change-detector {
 		reverse_proxy 192.168.0.20:5566
 	}
+
+	@registry host docker.local.kye.dev
+	handle @registry {
+		reverse_proxy 192.168.0.20:8500
+	}
 }

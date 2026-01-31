@@ -1,6 +1,27 @@
 ---
 # Install Docker and configure Portainer with persistent storage
 
+# --- Fetch Portainer API Key from BWS ---
+
+- name: verify bws CLI is available
+  delegate_to: localhost
+  ansible.builtin.command: which bws
+  changed_when: false
+
+- name: fetch portainer API key from Bitwarden Secrets Manager
+  delegate_to: localhost
+  ansible.builtin.command: bws secret get {{ portainer_bws_secret_id }} --output json
+  environment:
+    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
+  register: bws_result
+  changed_when: false
+  no_log: true
+
+- name: parse portainer API key
+  ansible.builtin.set_fact:
+    portainer_api_key: "{{ (bws_result.stdout | from_json).value }}"
+  no_log: true
+
 # --- Docker Installation ---
 
 - name: check if Docker is installed

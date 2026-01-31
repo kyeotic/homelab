@@ -7,7 +7,7 @@ portainer_image: portainer/portainer-ce:latest
 portainer_container_name: portainer
 portainer_https_port: 9443
 portainer_tunnel_port: 8000
-portainer_api_key: ""  # Set via vault: portainer_api_key
+bws_access_token: "{{ vault_bws_access_token }}"
 portainer_redeploy_stacks: true
 
 # Docker settings

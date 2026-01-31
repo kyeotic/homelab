@@ -108,4 +108,4 @@ kubeconfig.yaml
 # Python
 __pycache__/
 *.pyc
-ai-plans/
+plans/

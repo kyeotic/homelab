@@ -14,6 +14,8 @@ samba_group_gid: 10000
 samba_lxc_ip: "192.168.0.11/24"
 # Bitwarden Secrets Manager secret ID containing the samba password
 samba_bws_secret_id: "c65a3ce8-9145-4c17-9481-b3e1005e9adc"
+# Bitwarden Secrets Manager secret ID containing the Portainer API key
+portainer_bws_secret_id: "3627973b-9a14-44f5-9a5a-b3e3006cc4ae"
 
 # Samba share definitions
 samba_shares:
