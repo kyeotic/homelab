@@ -71,7 +71,7 @@ docker logs webhook-router
 ## Remaining Work
 
 - [ ] Test the full push → stook → Portainer redeploy pipeline (steps 1-2 above)
-- [ ] Verify stook correctly reads `webhook-router.image` label and `com.docker.compose.project` label
+- [ ] Verify stook correctly reads `stook: redeploy` label and `com.docker.compose.project` label
 - [ ] Verify the registry GC timer is active: `systemctl status registry-gc.timer` on docker host
 - [ ] Once testing is confirmed working, remove `test-echo` stack from `stacks.yml` and delete `apps/test-echo/` (or keep as a reference)
 
@@ -86,7 +86,7 @@ Push image → docker.local.kye.dev (Caddy) → registry:2 (port 8500)
                                           stook (webhook-router)
                                                   │
                                     reads Docker labels to find
-                                    matching webhook-router.image
+                                    matching stook: redeploy
                                                   │
                                                   ▼
                                           Portainer API
@@ -102,7 +102,7 @@ services:
   myapp:
     image: docker.local.kye.dev/myapp:latest
     labels:
-      webhook-router.image: "myapp"
+      stook: redeploy
 ```
 
-Stook reads the stack name from the `com.docker.compose.project` label (set automatically by Docker Compose) and calls the Portainer API to redeploy the stack.
+Stook reads the `stook: redeploy` label and the stack name from the `com.docker.compose.project` label (set automatically by Docker Compose) and calls the Portainer API to redeploy the stack.

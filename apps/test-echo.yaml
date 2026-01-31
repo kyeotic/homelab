@@ -6,4 +6,4 @@ services:
     ports:
       - "8501:80"
     labels:
-      webhook-router.image: "test-echo"
+      stook: redeploy

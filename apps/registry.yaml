@@ -19,7 +19,11 @@ services:
     image: ghcr.io/kyeotic/stook:latest
     container_name: webhook-router
     restart: unless-stopped
+    extra_hosts:                                                       
+        - "host.docker.internal:host-gateway"    
     environment:
+      PORTAINER_URL: "https://host.docker.internal:9443"
       PORTAINER_API_KEY: "${PORTAINER_API_KEY}"
+      LOG_LEVEL: debug
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
