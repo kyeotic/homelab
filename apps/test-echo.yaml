@@ -1,14 +1,9 @@
 services:
   test-echo:
-    image: nginx:alpine
+    image: docker.local.kye.dev/test-echo:latest
     container_name: test-echo
     restart: unless-stopped
     ports:
       - "8501:80"
-    environment:
-      ECHO_MESSAGE: "${ECHO_MESSAGE:-hello from test-echo22222}"
-      NGINX_PORT: "80"
-    volumes:
-      - type: tmpfs
-        target: /etc/nginx/templates
-    entrypoint: ["/bin/sh", "-c", "printf 'server { listen 80; location / { default_type text/plain; return 200 \"$${ECHO_MESSAGE}\"; } }' > /etc/nginx/templates/default.conf.template && /docker-entrypoint.sh nginx -g 'daemon off;'"]
+    labels:
+      webhook-router.image: "test-echo"
