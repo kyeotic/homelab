@@ -1,4 +1,4 @@
 ---
-pve_release: bookworm
+pve_release: trixie
 pve_no_subscription_repo: "deb http://download.proxmox.com/debian/pve {{ pve_release }} pve-no-subscription"
 pve_expected_version_prefix: "pve-manager/9.1"
