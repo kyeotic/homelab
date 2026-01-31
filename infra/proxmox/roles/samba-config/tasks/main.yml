@@ -22,7 +22,9 @@
 
 - name: install samba
   ansible.builtin.apt:
-    name: samba
+    name:
+      - samba
+      - acl
     state: present
     update_cache: true
 

@@ -26,7 +26,7 @@
    browseable = {{ 'yes' if share.browseable | default(true) else 'no' }}
    valid users = {{ samba_user }}
    force user = {{ samba_user }}
-   force group = {{ samba_user }}
+   force group = {{ samba_group_name }}
    create mask = 0664
    directory mask = 0775
 
