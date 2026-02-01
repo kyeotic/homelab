@@ -12,11 +12,13 @@ services:
     restart: unless-stopped
     ports:
       - "<host-port>:<container-port>"
+    environment:
+      - EXAMPLE_VAR=${EXAMPLE_VAR:?err}
     labels:
       stook: redeploy
 ```
 
-The `stook: redeploy` label enables automatic redeployment when a new image is pushed to the registry.
+The `${VAR:?err}` syntax ensures compose fails immediately if the variable is unset or empty. The `stook: redeploy` label enables automatic redeployment when a new image is pushed to the registry.
 
 ## 2. Deploy the stack to Portainer
 
