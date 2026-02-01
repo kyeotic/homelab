@@ -4,7 +4,8 @@ global:
   default-command: snapshots
 
 default:
-  repository: "rest:https://sd9j6dod:X23NkZv6sobxuAND@sd9j6dod.repo.borgbase.com"
+  env-file:
+    - /root/restic-env
   password-file: "~/restic-password"
   lock-timeout: "30m"
   # Automatically remove stale locks

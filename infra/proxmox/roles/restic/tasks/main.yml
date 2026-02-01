@@ -42,6 +42,15 @@
         state: absent
   when: not resticprofile_binary.stat.exists
 
+- name: create restic env file
+  tags: [setup-proxmox, restore-containers, sync, sync-restic]
+  ansible.builtin.copy:
+    content: "RESTIC_REPOSITORY={{ restic_repo_url }}"
+    dest: /root/restic-env
+    mode: '0600'
+    owner: root
+    group: root
+
 - name: sync restic profile
   tags: [setup-proxmox, restore-containers, sync, sync-restic]
   ansible.builtin.copy:
