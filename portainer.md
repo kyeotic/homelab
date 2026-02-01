@@ -39,24 +39,23 @@ From the homelab repo root, run:
 
 The optional `bws-secret-id` is a BWS secret containing env vars in `KEY=VALUE` format (one per line). Requires: `bws`, `jq`, `curl`.
 
-## 3. Build and push
+## 3. Build and deploy
 
-From your project directory, build the image and push it to the local registry:
+Add a `justfile` to your project:
 
-```bash
-docker build --platform linux/amd64 -t docker.local.kye.dev/<app-name>:latest .
-docker push docker.local.kye.dev/<app-name>:latest
+```just
+app_name := "<app-name>"
+registry := "docker.local.kye.dev"
+
+deploy:
+    docker build --platform linux/amd64 -t {{registry}}/{{app_name}}:latest .
+    docker push {{registry}}/{{app_name}}:latest
 ```
 
-After the initial stack deploy, subsequent pushes will trigger stook to automatically redeploy the stack via the Portainer API.
-
-## Redeploying after changes
-
-Rebuild and push:
+Then run:
 
 ```bash
-docker build --platform linux/amd64 -t docker.local.kye.dev/<app-name>:latest .
-docker push docker.local.kye.dev/<app-name>:latest
+just deploy
 ```
 
-Stook picks up the registry push notification and triggers a redeploy automatically.
+This builds and pushes the image to the local registry. After the initial stack deploy, stook picks up the registry push notification and triggers a redeploy automatically.
