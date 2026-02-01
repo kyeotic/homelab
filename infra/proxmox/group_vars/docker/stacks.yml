@@ -41,5 +41,5 @@ portainer_stacks:
     compose_file: registry.yaml
     env_secret_id: "a64a087d-9f21-46ee-affc-b3e30072cab0"
 
-  - name: test-echo
-    compose_file: test-echo.yaml
+  # - name: test-echo
+  #   compose_file: test-echo.yaml
