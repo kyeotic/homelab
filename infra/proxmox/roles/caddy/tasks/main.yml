@@ -8,35 +8,18 @@
     state: directory
     mode: '0755'
 
-- name: sync Dockerfile
-  tags: [setup-caddy]
-  ansible.builtin.copy:
-    src: ../../../caddy/Dockerfile
-    dest: /root/caddy/Dockerfile
-    mode: '0644'
-  register: dockerfile_sync
-
 - name: sync compose.yaml
   tags: [setup-caddy]
   ansible.builtin.copy:
     src: ../../../caddy/compose.yaml
     dest: /root/caddy/compose.yaml
     mode: '0644'
-  register: compose_sync
-
-- name: build caddy image
-  tags: [setup-caddy]
-  ansible.builtin.command:
-    cmd: docker compose build
-    chdir: /root/caddy
-  when: dockerfile_sync.changed or compose_sync.changed
 
 - name: create env file with secrets
   tags: [setup-caddy]
   ansible.builtin.copy:
     content: |
-      AWS_ACCESS_KEY={{ aws_access_key }}
-      AWS_ACCESS_SECRET={{ aws_access_secret }}
+      CF_API_TOKEN={{ cloudflare_api_token }}
     dest: /root/caddy/.env
     mode: '0600'
 

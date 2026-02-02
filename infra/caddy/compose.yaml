@@ -1,7 +1,7 @@
 services:
   caddy:
-    # build: . # no longer using custom version
-    image: ghcr.io/williamjacksn/caddy-route53:2.10.2-1.6.0
+    image: ghcr.io/caddybuilds/caddy-cloudflare:latest
+    container_name: caddy
     restart: unless-stopped
     ports:
       - '80:80'
@@ -11,9 +11,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - /mnt/caddy:/data/caddy
     environment:
-      # Uses aws ddns role with homelab user
-      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
-      - AWS_ACCESS_SECRET=${AWS_ACCESS_SECRET}
+      - CF_API_TOKEN=${CF_API_TOKEN}
     logging:
       driver: 'json-file'
       options:

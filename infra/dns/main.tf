@@ -1,7 +1,10 @@
 terraform {
   required_version = "~> 1.0"
   required_providers {
-    aws = "~> 2.5"
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
   backend "s3" {
     bucket = "terraform-remote-902498034412"
@@ -10,6 +13,4 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = "us-west-2"
-}
+provider "cloudflare" {}
