@@ -50,44 +50,7 @@ Consider the following when designing
 
 ## VPN
 
-First, for LXC
-
-this is needed for docker/VPN setups
-run `nano /etc/pve/lxc/105.conf` and add
-```
-lxc.cgroup2.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
-```
-
-Install [with this](https://tailscale.com/kb/1130/lxc-unprivileged)
-
-Then on LXC
-
-```
-
-# Install Tailscale on Alpine Linux
-apt update
-apt install curl
-
-curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
-apt update
-apt install tailscale
-
-# Use OpenRC to enable and start the service
-
-rc-update add tailscale
-rc-service tailscale start
-
-# Authenticate and connect your machine to your Tailscale network
-
-tailscale up
-
-# You’re connected! You can find your Tailscale IPv4 address by running:
-
-tailscale ip -4
-
-```
+Tailscale runs on an LXC in proxmox providing a subnet router. This allows any connected Tailscale client to view the home network as if they were inside of it.
 
 ### Subnet Routing
 Remote access is handled with [TailScale's Subnet Router](https://tailscale.com/kb/1019/subnets?q=route&tab=linux#advertise-subnet-routes)
