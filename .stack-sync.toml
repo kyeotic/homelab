@@ -27,5 +27,4 @@ env_file = "apps/games/core-keeper/.env"
 compose_file = "apps/uptime-kuma.yaml"
 
 [stacks.registry]
-compose_file = "apps/registry/registry.yaml"
-env_file = "apps/registry/.env"
+compose_file = "apps/registry.yaml"
