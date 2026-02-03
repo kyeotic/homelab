@@ -22,7 +22,7 @@
 
 - name: sync stacks to Portainer
   ansible.builtin.command:
-    cmd: stack-sync sync -C {{ playbook_dir }}/../../apps/stack-sync.toml
+    cmd: stack-sync sync -C {{ playbook_dir }}/../../.stack-sync.toml
   delegate_to: localhost
   become: false
   register: stack_sync_result

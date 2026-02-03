@@ -3,10 +3,6 @@ id = "d7e1ab44-7c5f-4bec-a85c-b3e50177934c"
 path = ".ansible-vault"
 
 [[secrets]]
-id = "140aeff7-2c9e-4f42-a073-b3e6003517e8"
-path = ".env"
-
-[[secrets]]
 id = "f817462b-83b3-43c2-bc0a-b3dd0001a4cb"
 path = "apps/mealie/.env"
 
