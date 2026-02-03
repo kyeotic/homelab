@@ -21,7 +21,6 @@ Caddy handles reverse proxying for all services under `*.local.kye.dev` using DN
 
 - [Just](https://github.com/casey/just) task runner
 - Ansible with `ansible-vault`
-- Vault password stored in `.ansible-vault` (gitignored)
 - [vault-sync](https://github.com/kyeotic/vault-sync) for syncing Bitwarden secrets to local `.env` files
 - [stack-sync](https://github.com/kyeotic/stack-sync) for deploying Docker stacks to Portainer
 - `PORTAINER_API_KEY` environment variable set (create in Portainer under User Settings > Access Tokens)

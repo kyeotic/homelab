@@ -1,5 +1,3 @@
-host = "https://portainer.local.kye.dev"
-
 [stacks.mealie]
 compose_file = "apps/mealie/mealie.yaml"
 env_file = "apps/mealie/.env"
