@@ -22,7 +22,9 @@ Caddy handles reverse proxying for all services under `*.local.kye.dev` using DN
 - [Just](https://github.com/casey/just) task runner
 - Ansible with `ansible-vault`
 - Vault password stored in `.ansible-vault` (gitignored)
-- [bws CLI](https://bitwarden.com/help/secrets-manager-cli/) for Bitwarden Secrets Manager (used for Portainer stack env vars)
+- [vault-sync](https://github.com/kyeotic/vault-sync) for syncing Bitwarden secrets to local `.env` files
+- [stack-sync](https://github.com/kyeotic/stack-sync) for deploying Docker stacks to Portainer
+- `PORTAINER_API_KEY` environment variable set (create in Portainer under User Settings > Access Tokens)
 
 ## Commands
 
@@ -142,34 +144,38 @@ This syncs the file and triggers a live config reload (no container restart need
 
 ## Application Stacks
 
-Applications run as Docker Compose stacks managed through [Portainer](https://www.portainer.io/). Compose files live in `apps/` and stack definitions are in `infra/proxmox/group_vars/docker/stacks.yml`.
+Applications run as Docker Compose stacks managed through [Portainer](https://www.portainer.io/). Stack configuration is in `apps/stack-sync.toml` and compose files are in `apps/`.
 
 ### How stacks work
 
-Each stack entry in `stacks.yml` maps a name to a compose file and an optional Bitwarden Secrets Manager secret ID for environment variables:
+Stacks are deployed using [stack-sync](https://github.com/kyeotic/stack-sync), which reads `.stack-sync.toml`:
 
-```yaml
-portainer_stacks:
-  - name: scrypted
-    compose_file: scrypted.yaml
-    env_secret_id: "bws-uuid"
+```toml
+host = "https://portainer.local.kye.dev"
+
+[stacks.scrypted]
+compose_file = "scrypted.yaml"
+
+[stacks.mealie]
+compose_file = "mealie/mealie.yaml"
+env_file = "mealie/.env"
 ```
 
-The `portainer-stacks` role reads the compose file from `apps/`, fetches env vars from Bitwarden, and creates/updates the stack via the Portainer API. It detects changes and only updates stacks that have been modified.
+Stacks that need environment variables have their `.env` files managed by [vault-sync](https://github.com/kyeotic/vault-sync), which syncs secrets from Bitwarden Secrets Manager. The vault-sync config is in `.vault-sync.toml`.
 
 ### Adding a new stack
 
 1. Create a compose file in `apps/` (volumes should mount under `/mnt/app_config/<name>`)
-2. If the stack needs env vars, create a secret in Bitwarden Secrets Manager containing the variables in `.env` format
-3. Add the stack entry to `infra/proxmox/group_vars/docker/stacks.yml`
-4. Deploy:
+2. If the stack needs env vars:
+   - Create a secret in Bitwarden Secrets Manager containing the variables in `.env` format
+   - Add a vault-sync entry in `.vault-sync.toml` to sync the secret to `apps/<stack>/.env`
+   - Create a folder for the stack and place the compose file inside
+3. Add the stack to `apps/stack-sync.toml`
+4. Sync secrets and deploy:
    ```bash
-   just deploy docker-stacks <stack-name>
+   vault-sync sync
+   just deploy docker-stacks
    ```
-
-### Current stacks
-
-mealie, servarr, home-assistant, scrypted, syncthing, ffmpeg, core-keeper, uptime-kuma, registry, test-echo
 
 ## Vault Management
 
