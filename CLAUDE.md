@@ -42,18 +42,18 @@ infra/proxmox/
 
 ### Roles
 
-| Role | Purpose |
-|------|---------|
+| Role             | Purpose                                  |
+| ---------------- | ---------------------------------------- |
 | pve-post-install | Proxmox repo setup, nag removal, updates |
-| proxmox-packages | Package installation |
-| zfs-pool | ZFS pool and dataset creation |
-| restic | Backup configuration with resticprofile |
-| lxc-users | LXC user/group ID mapping |
-| gpu-access | GPU passthrough udev rules |
-| zed-discord | ZFS event notifications to Discord |
-| container-ssh | SSH key distribution |
-| caddy | Caddy reverse proxy setup |
-| docker-cleanup | Docker cleanup systemd timer |
+| proxmox-packages | Package installation                     |
+| zfs-pool         | ZFS pool and dataset creation            |
+| restic           | Backup configuration with resticprofile  |
+| lxc-users        | LXC user/group ID mapping                |
+| gpu-access       | GPU passthrough udev rules               |
+| zed-discord      | ZFS event notifications to Discord       |
+| container-ssh    | SSH key distribution                     |
+| caddy            | Caddy reverse proxy setup                |
+| docker-cleanup   | Docker cleanup systemd timer             |
 
 ### Other Directories
 
@@ -75,3 +75,14 @@ ansible-vault edit infra/proxmox/group_vars/all/vault.yml
 - Role variables go in `roles/<role>/defaults/main.yml`
 - Encrypted secrets use Ansible Vault in `group_vars/all/vault.yml`
 - Tags control which parts of the playbook run
+
+# Ansible Roles Code Review
+
+## Criteria
+
+1. **Clarity** - Task names descriptive, logical ordering, easy to follow
+2. **Efficiency** - No redundant steps, proper use of handlers vs tasks
+3. **Idempotency** - Safe to re-run without side effects
+4. **Convention** - FQCN module names, proper use of `become`, `changed_when`/`failed_when` where needed, variables in defaults
+5. **Consistency** - Similar patterns across roles (naming, structure, variable placement)
+6. **Correctness** - Potential bugs or logic errors
