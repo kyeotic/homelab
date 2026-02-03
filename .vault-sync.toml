@@ -1,0 +1,27 @@
+[[secrets]]
+id = "d7e1ab44-7c5f-4bec-a85c-b3e50177934c"
+path = ".ansible-vault"
+
+[[secrets]]
+id = "140aeff7-2c9e-4f42-a073-b3e6003517e8"
+path = ".env"
+
+[[secrets]]
+id = "f817462b-83b3-43c2-bc0a-b3dd0001a4cb"
+path = "apps/mealie/.env"
+
+[[secrets]]
+id = "a18471be-1dad-4c89-a9eb-b3dd000164d2"
+path = "apps/servarr/.env"
+
+[[secrets]]
+id = "67cbf07f-b8f8-4d32-a48a-b3dd0001c2c1"
+path = "apps/scrypted/.env"
+
+[[secrets]]
+id = "6fba33db-bc67-46e1-a243-b3dd0001884d"
+path = "apps/games/core-keeper/.env"
+
+[[secrets]]
+id = "a64a087d-9f21-46ee-affc-b3e30072cab0"
+path = "apps/registry/.env"

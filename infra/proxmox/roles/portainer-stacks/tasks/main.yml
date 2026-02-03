@@ -1,263 +1,29 @@
 ---
-# Deploy Docker Compose stacks to Portainer with env vars from Bitwarden Secrets Manager
-# Requires: bws CLI installed locally (brew install bitwarden/bws/bws)
+# Deploy Docker Compose stacks to Portainer using stack-sync
+# Requires: stack-sync installed locally, PORTAINER_API_KEY in environment
 
-# --- BWS CLI Check ---
-
-- name: check if bws CLI is installed locally
-  ansible.builtin.command: bws --version
+- name: check if stack-sync is installed locally
+  ansible.builtin.command: stack-sync --version
   delegate_to: localhost
   become: false
-  register: bws_check
+  register: stack_sync_check
   failed_when: false
   changed_when: false
 
-- name: fail if bws CLI is not installed
+- name: fail if stack-sync is not installed
   ansible.builtin.fail:
-    msg: "bws CLI is not installed locally. Install with: brew install bitwarden/bws/bws"
-  when: bws_check.rc != 0
+    msg: "stack-sync is not installed locally. Install from: https://github.com/kyeotic/stack-sync"
+  when: stack_sync_check.rc != 0
 
-# --- Fetch Portainer API Key from BWS (if not already set by docker-portainer) ---
+- name: check PORTAINER_API_KEY is set
+  ansible.builtin.fail:
+    msg: "PORTAINER_API_KEY environment variable must be set"
+  when: lookup('env', 'PORTAINER_API_KEY') | length == 0
 
-- name: fetch portainer API key from Bitwarden Secrets Manager
-  delegate_to: localhost
-  become: false
-  ansible.builtin.command: bws secret get {{ portainer_bws_secret_id }} --output json
-  environment:
-    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
-  register: bws_api_key_result
-  changed_when: false
-  no_log: true
-  when: portainer_api_key | length == 0
-
-- name: parse portainer API key
-  ansible.builtin.set_fact:
-    portainer_api_key: "{{ (bws_api_key_result.stdout | from_json).value }}"
-  no_log: true
-  when: portainer_api_key | length == 0
-
-# --- Validate Required Variables ---
-
-- name: validate required variables
-  ansible.builtin.assert:
-    that:
-      - portainer_api_key | length > 0
-      - bws_access_token | length > 0
-    fail_msg: "portainer_api_key and bws_access_token must be set"
-
-# --- Portainer API Setup ---
-
-- name: wait for Portainer API to be ready
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/system/status"
-    method: GET
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-    validate_certs: false
-    status_code: 200
-  register: portainer_status
-  until: portainer_status.status == 200
-  retries: 30
-  delay: 2
-  check_mode: false
-
-- name: get list of existing stacks
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/stacks"
-    method: GET
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-    validate_certs: false
-  register: existing_stacks
-  check_mode: false
-
-# --- Fetch and Parse BWS Secrets ---
-
-# Filter to only enabled stacks
-- name: build enabled stacks list
-  ansible.builtin.set_fact:
-    _all_enabled: "{{ portainer_stacks | selectattr('enabled', 'undefined') | list + portainer_stacks | selectattr('enabled', 'defined') | selectattr('enabled') | list }}"
-
-- name: apply stack filter if specified
-  ansible.builtin.set_fact:
-    enabled_stacks: "{{ _all_enabled | selectattr('name', 'equalto', portainer_stack_filter) | list if portainer_stack_filter else _all_enabled }}"
-
-# Fetch secrets from Bitwarden
-- name: fetch env vars from Bitwarden
+- name: sync stacks to Portainer
   ansible.builtin.command:
-    cmd: bws secret get {{ item.env_secret_id }} --output json
-  environment:
-    BWS_ACCESS_TOKEN: "{{ bws_access_token }}"
+    cmd: stack-sync sync -C {{ playbook_dir }}/../../apps/stack-sync.toml
   delegate_to: localhost
   become: false
-  loop: "{{ enabled_stacks | selectattr('env_secret_id', 'defined') | list }}"
-  loop_control:
-    label: "{{ item.name | default(item.compose_file) }}"
-  register: bws_secrets_raw
-  changed_when: false
-  check_mode: false
-  no_log: true
-  timeout: 30
-
-# Parse secrets into dict
-- name: initialize secrets dict
-  ansible.builtin.set_fact:
-    bws_secrets_parsed: {}
-
-- name: parse env vars from Bitwarden secrets
-  ansible.builtin.set_fact:
-    bws_secrets_parsed: >-
-      {{
-        bws_secrets_parsed | combine({
-          item.item.compose_file: (item.stdout | from_json).value | parse_env
-        })
-      }}
-  loop: "{{ bws_secrets_raw.results }}"
-  loop_control:
-    label: "{{ item.item.name | default(item.item.compose_file) }}"
-  when: item.stdout is defined
-  no_log: true
-
-# --- Build Stack Data ---
-
-- name: build stack deployment data
-  ansible.builtin.set_fact:
-    stack_data: >-
-      {{
-        stack_data | default([]) + [{
-          'name': item.name | default(item.compose_file | regex_replace('\.yaml$', '') | basename),
-          'compose_file': item.compose_file,
-          'compose_content': lookup('file', playbook_dir + '/../../apps/' + item.compose_file),
-          'env_list': bws_secrets_parsed[item.compose_file] | default([])
-        }]
-      }}
-  loop: "{{ enabled_stacks }}"
-  loop_control:
-    label: "{{ item.name | default(item.compose_file | regex_replace('\\.yaml$', '') | basename) }}"
-
-- name: get list of managed stack names
-  ansible.builtin.set_fact:
-    managed_stack_names: "{{ stack_data | map(attribute='name') | list }}"
-
-# --- Fetch Current Stack State for Comparison ---
-
-- name: get current stack file content
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/stacks/{{ (existing_stacks.json | selectattr('Name', 'equalto', item.name) | first).Id }}/file"
-    method: GET
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-    validate_certs: false
-  loop: "{{ stack_data }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
-  register: current_stack_files
-  check_mode: false
-
-- name: initialize stack comparison dict
-  ansible.builtin.set_fact:
-    stack_comparison: {}
-
-- name: build comparison data for existing stacks
-  ansible.builtin.set_fact:
-    stack_comparison: >-
-      {{
-        stack_comparison | default({}) | combine({
-          item.name: item.name | stack_needs_update(
-            current_stack_files.results,
-            existing_stacks.json,
-            item.compose_content,
-            item.env_list
-          )
-        })
-      }}
-  loop: "{{ stack_data }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
-
-# --- Deploy Stacks ---
-
-- name: create new stacks
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/stacks/create/standalone/string?endpointId={{ portainer_endpoint_id }}"
-    method: POST
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-      Content-Type: application/json
-    body_format: json
-    body:
-      name: "{{ item.name }}"
-      stackFileContent: "{{ item.compose_content }}"
-      env: "{{ item.env_list }}"
-    validate_certs: false
-    status_code: [200, 201]
-  loop: "{{ stack_data }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - not ansible_check_mode
-    - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length == 0
-  changed_when: true
-
-- name: update existing stacks
-  vars:
-    existing_stack: "{{ existing_stacks.json | selectattr('Name', 'equalto', item.name) | first }}"
-  ansible.builtin.uri:
-    url: "{{ portainer_url }}/api/stacks/{{ existing_stack.Id }}?endpointId={{ existing_stack.EndpointId }}"
-    method: PUT
-    headers:
-      X-API-Key: "{{ portainer_api_key }}"
-      Content-Type: application/json
-    body_format: json
-    body:
-      stackFileContent: "{{ item.compose_content }}"
-      env: "{{ item.env_list }}"
-      prune: true
-      pullImage: true
-    validate_certs: false
-    status_code: [200]
-  loop: "{{ stack_data }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - not ansible_check_mode
-    - existing_stacks.json | selectattr('Name', 'equalto', item.name) | list | length > 0
-    - stack_comparison[item.name].content_changed or stack_comparison[item.name].env_changed
-  changed_when: true
-
-- name: build list of unchanged stacks
-  ansible.builtin.set_fact:
-    unchanged_stacks: >-
-      {{
-        stack_data
-        | map(attribute='name')
-        | select('in', stack_comparison.keys() | list)
-        | reject('in', stack_comparison | dict2items
-            | selectattr('value.content_changed')
-            | map(attribute='key') | list)
-        | reject('in', stack_comparison | dict2items
-            | selectattr('value.env_changed')
-            | map(attribute='key') | list)
-        | list
-      }}
-
-- name: report unchanged stacks
-  ansible.builtin.debug:
-    msg: "Unchanged stacks: {{ unchanged_stacks | join(', ') }}"
-  when: unchanged_stacks | length > 0
-
-# --- Report Unmanaged Stacks ---
-
-- name: find unmanaged stacks
-  ansible.builtin.set_fact:
-    unmanaged_stacks: "{{ existing_stacks.json | rejectattr('Name', 'in', managed_stack_names) | map(attribute='Name') | list }}"
-  when: not portainer_stack_filter
-
-- name: report unmanaged stacks
-  ansible.builtin.debug:
-    msg: "Unmanaged stacks (remove manually if no longer needed): {{ unmanaged_stacks | join(', ') }}"
-  when:
-    - not portainer_stack_filter
-    - unmanaged_stacks | default([]) | length > 0
+  register: stack_sync_result
+  changed_when: "'Updated' in stack_sync_result.stdout or 'Created' in stack_sync_result.stdout"

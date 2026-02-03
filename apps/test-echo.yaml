@@ -1,9 +1,0 @@
-services:
-  test-echo:
-    image: docker.local.kye.dev/test-echo:latest
-    container_name: test-echo
-    restart: unless-stopped
-    ports:
-      - "8501:80"
-    labels:
-      stook: redeploy

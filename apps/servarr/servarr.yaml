@@ -10,6 +10,7 @@ networks:
 
 volumes:
   rreading_glasses_data:
+  recyclarr_data:
 
 ###########################################################################
 ##  Docker Compose File:    Gluetun (qmcgaw)
@@ -593,10 +594,12 @@ services:
     networks:
       - media-network
     volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/recyclarr:/config
+      - ${FOLDER_FOR_CONFIGS:?err}/recyclarr:/config   # Back this up
+      - recyclarr_data:/data                           # Don't need to back this up
     # read_only: true # <-- Add this to enable read-only mode
     tmpfs: /tmp # <-- Mount /tmp to a volume
     environment:
+      - RECYCLARR_RESOURCE_DIR=/data/resources
       - TZ=${TIMEZONE:?err}
       # Sonarr Config - Copy API Key from: http://sonarr:8989/general/settings
       - SONARR_URL=http://sonarr:8989
