@@ -1,12 +1,15 @@
 ---
 proxmox_packages:
-  - htop
-  - sysstat
-  - radeontop
   - acl
-  - jq
-  - lshw
-  - intel-gpu-tools
   - drm-info
+  - fzf
+  - htop
+  - intel-gpu-tools
+  - jq
   - lm-sensors
+  - lshw
+  - ncdu
+  - radeontop
+  - sysstat
   - tmux
+  - tree

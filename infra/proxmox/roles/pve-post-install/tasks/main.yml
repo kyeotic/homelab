@@ -126,6 +126,19 @@
       shopt -s histappend
       PROMPT_COMMAND='history -a'
 
+- name: disable XON/XOFF flow control to free ctrl+s for forward search
+  ansible.builtin.lineinfile:
+    path: /root/.bashrc
+    line: 'stty -ixon'
+    regexp: '^stty -ixon'
+
+- name: enable fzf keybindings for interactive shell
+  ansible.builtin.blockinfile:
+    path: /root/.bashrc
+    marker: "# {mark} ANSIBLE MANAGED - fzf"
+    block: |
+      eval "$(fzf --bash)"
+
 - name: add /tank/apps/scripts to root PATH in bashrc
   ansible.builtin.lineinfile:
     path: /root/.bashrc
