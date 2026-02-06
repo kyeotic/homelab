@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+
+_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_root="${_dir}/../.."
+_env="${_root}/apps/mealie/.env"
+
+# Source project .env for CLOUDFLARE_API_TOKEN
+set -o allexport; source "${_root}/.env"; set +o allexport
+
+# Source mealie .env for Auth0 credentials
+set -o allexport; source "${_env}"; set +o allexport
+
+terraform -chdir="${_dir}" init -upgrade
+
+terraform -chdir="${_dir}" apply \
+  -var "auth0_domain=${AUTH0_DOMAIN}" \
+  -var "auth0_client_id=${OIDC_CLIENT_ID}" \
+  -var "auth0_client_secret=${OIDC_CLIENT_SECRET}"
+
+# echo ""
+# echo "Tunnel token (add to ${_env} as TUNNEL_TOKEN):"
+# terraform -chdir="${_dir}" output -raw mealie_tunnel_token
+# echo ""

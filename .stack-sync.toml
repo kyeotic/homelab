@@ -31,3 +31,4 @@ compose_file = "apps/registry.yaml"
 
 [stacks.dockerstats]
 compose_file = "apps/dockerstats.yaml"
+enabled = false
