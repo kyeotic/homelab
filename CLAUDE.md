@@ -55,12 +55,27 @@ infra/proxmox/
 | caddy            | Caddy reverse proxy setup                |
 | docker-cleanup   | Docker cleanup systemd timer             |
 
+### Docker Stacks (`apps/`)
+
+Docker Compose stacks are deployed to Portainer via [stack-sync](https://github.com/kyeotic/stack-sync). The config is in `.stack-sync.toml`, which maps each stack name to its compose file (and optional `.env` file) under `apps/`.
+
+To add a new stack:
+1. Create a Docker Compose file in `apps/` (single file) or `apps/<name>/` (if it needs an `.env`)
+2. Add a `[stacks.<name>]` entry in `.stack-sync.toml` pointing to the compose file (and `env_file` if applicable)
+3. Mount persistent data to `/mnt/app_config/<name>/` on the Docker host (e.g., `/mnt/app_config/mealie:/app/data`)
+4. If the stack needs a reverse proxy route, add an entry to `infra/caddy/Caddyfile` under the `*.local.kye.dev` block following the existing pattern:
+   ```
+   @name host name.local.kye.dev
+   handle @name {
+       reverse_proxy 192.168.0.20:<host-port>
+   }
+   ```
+
 ### Other Directories
 
 - `infra/caddy/` - Caddyfile and Docker Compose for reverse proxy
 - `infra/restic/` - Resticprofile backup configuration
 - `infra/aws/` - Terraform for Route53 DNS (rarely modified)
-- `apps/` - Docker Compose files for services (rarely modified)
 
 ## Vault Management
 

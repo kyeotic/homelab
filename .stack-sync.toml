@@ -28,3 +28,6 @@ compose_file = "apps/uptime-kuma.yaml"
 
 [stacks.registry]
 compose_file = "apps/registry.yaml"
+
+[stacks.dockerstats]
+compose_file = "apps/dockerstats.yaml"
