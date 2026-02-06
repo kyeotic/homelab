@@ -72,19 +72,13 @@ The playbook performs the following tasks:
 - Installs resticprofile to `/usr/local/bin`
 - Only runs if resticprofile isn't already installed
 
-### 4. Create Proxmox Directory Storage
-- Adds a Proxmox "directory" storage called `container-backups`
-- Points to the ZFS dataset at `/tank/container-backups`
-- Configured for backup content type
-- Idempotent - won't fail if storage already exists
-
-### 5. Create LXC Virtual Users
+### 4. Create LXC Virtual Users
 - Creates the `nas_shares` group with GID `110000` for LXC container mapping
 - Creates the `nas` user with UID `101000` in the `nas_shares` group
 - Enables proper user/group ID mapping between the host and unprivileged LXC containers
 - User is created with a home directory and bash shell
 
-### 6. Configure GPU Access for Unprivileged LXC Containers
+### 5. Configure GPU Access for Unprivileged LXC Containers
 - Deploys udev rules to `/etc/udev/rules.d/99-gpu-chmod666.rules`
 - Sets permissions on GPU devices (`renderD128`, `kfd`, `card0`) to allow container access
 - Automatically reloads udev rules and triggers device updates when changed
