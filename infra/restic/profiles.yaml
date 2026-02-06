@@ -51,6 +51,7 @@ daily:
     keep-last: 1
     prune: true
     tag: ["daily"]
+    group-by: "host,tags"
   forget: *daily-retention
 
 weekly:
@@ -65,4 +66,5 @@ weekly:
     keep-last: 2
     prune: true
     tag: ["weekly"]
+    group-by: "host,tags"
   forget: *weekly-retention
