@@ -1,8 +1,7 @@
 ---
-# Restic/Resticprofile setup
+# Restic/Resticprofile installation
 
 - name: install restic
-  tags: [setup-proxmox, restore-containers]
   ansible.builtin.apt:
     name: restic
     state: present
@@ -10,7 +9,6 @@
     cache_valid_time: 3600
 
 - name: create restic password file
-  tags: [setup-proxmox, restore-containers]
   ansible.builtin.copy:
     content: "{{ restic_password }}"
     dest: /root/restic-password
@@ -19,13 +17,11 @@
     group: root
 
 - name: check if resticprofile is installed
-  tags: [setup-proxmox, restore-containers]
   ansible.builtin.stat:
     path: /usr/local/bin/resticprofile
   register: resticprofile_binary
 
 - name: install resticprofile
-  tags: [setup-proxmox, restore-containers]
   block:
     - name: download resticprofile install script
       ansible.builtin.get_url:
@@ -41,20 +37,3 @@
         path: /tmp/resticprofile-install.sh
         state: absent
   when: not resticprofile_binary.stat.exists
-
-- name: create restic env file
-  tags: [setup-proxmox, restore-containers, sync, sync-restic]
-  ansible.builtin.copy:
-    content: "RESTIC_REPOSITORY={{ restic_repo_url }}"
-    dest: /root/restic-env
-    mode: '0600'
-    owner: root
-    group: root
-
-- name: sync restic profile
-  tags: [setup-proxmox, restore-containers, sync, sync-restic]
-  ansible.builtin.copy:
-    src: "{{ restic_profile_src }}"
-    dest: "{{ restic_profile_dest }}"
-    mode: '0644'
-  notify: register restic schedules

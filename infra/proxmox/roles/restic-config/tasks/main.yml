@@ -1,0 +1,17 @@
+---
+# Restic/Resticprofile configuration sync
+
+- name: create restic env file
+  ansible.builtin.copy:
+    content: "RESTIC_REPOSITORY={{ restic_repo_url }}"
+    dest: /root/restic-env
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: sync restic profile
+  ansible.builtin.copy:
+    src: "{{ restic_profile_src }}"
+    dest: "{{ restic_profile_dest }}"
+    mode: '0644'
+  notify: register restic schedules

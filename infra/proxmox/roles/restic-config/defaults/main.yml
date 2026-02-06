@@ -1,7 +1,4 @@
 ---
-# Restic password (set in vault)
-restic_password: ""
-
 # Restic repository URL (set in vault)
 restic_repo_url: ""
 

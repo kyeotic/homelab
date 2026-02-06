@@ -1,5 +1,5 @@
 ---
-# Handlers for restic role
+# Handlers for restic-config role
 
 - name: register restic schedules
   ansible.builtin.command: resticprofile schedule --all

@@ -6,7 +6,8 @@
     - { role: pve-post-install, tags: [setup-proxmox] }
     - { role: proxmox-packages, tags: [setup-proxmox] }
     - { role: zfs-pool, tags: [setup-proxmox] }
-    - role: restic
+    - { role: restic-install, tags: [setup-proxmox, restore-containers] }
+    - { role: restic-config, tags: [setup-proxmox, restore-containers, sync, sync-restic] }
     - { role: lxc-users, tags: [setup-proxmox] }
     - { role: gpu-access, tags: [setup-proxmox] }
     - { role: zed-discord, tags: [setup-proxmox] }
