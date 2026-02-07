@@ -1,27 +1,27 @@
-[[secrets]]
+[secrets.ansible]
 id = "d7e1ab44-7c5f-4bec-a85c-b3e50177934c"
 path = ".ansible-vault"
 
-[[secrets]]
+[secrets.env]
 id = "84d882bd-4ff2-4dc1-aa9f-b3e501455267"
 path = ".env"
 
-[[secrets]]
+[secrets.mealie]
 id = "f817462b-83b3-43c2-bc0a-b3dd0001a4cb"
 path = "apps/mealie/.env"
 
-[[secrets]]
+[secrets.servarr]
 id = "a18471be-1dad-4c89-a9eb-b3dd000164d2"
 path = "apps/servarr/.env"
 
-[[secrets]]
+[secrets.scrypted]
 id = "67cbf07f-b8f8-4d32-a48a-b3dd0001c2c1"
 path = "apps/scrypted/.env"
 
-[[secrets]]
+[secrets.core-keeper]
 id = "6fba33db-bc67-46e1-a243-b3dd0001884d"
 path = "apps/games/core-keeper/.env"
 
-[[secrets]]
+[secrets.stack-sync]
 id = "926503a1-3507-411b-a0bc-b3e60127ffed"
 path = "{{ env.HOME }}/.stack-sync.toml"
