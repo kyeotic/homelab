@@ -38,9 +38,9 @@
     chdir: /root/caddy
   changed_when: false
 
-- name: reload caddy config
+- name: recreate caddy container to pick up new Caddyfile
   tags: [setup-caddy, sync, sync-caddy]
   ansible.builtin.command:
-    cmd: docker compose exec -T -w /etc/caddy caddy caddy reload
+    cmd: docker compose up -d --force-recreate
     chdir: /root/caddy
   when: caddyfile_sync.changed

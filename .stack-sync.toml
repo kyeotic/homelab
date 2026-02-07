@@ -29,6 +29,6 @@ compose_file = "apps/uptime-kuma.yaml"
 [stacks.registry]
 compose_file = "apps/registry.yaml"
 
-[stacks.dockerstats]
-compose_file = "apps/dockerstats.yaml"
-enabled = false
+[stacks.beszel]
+compose_file = "apps/beszel/beszel.yaml"
+env_file = "apps/beszel/.env"

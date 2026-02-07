@@ -28,9 +28,9 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - "8888:8888/tcp"                         # Gluetun Local Network HTTP proxy
-      - "8388:8388/tcp"                         # Gluetun Local Network Shadowsocks
-      - "8388:8388/udp"                         # Gluetun Local Network Shadowsocks
+      # - "8888:8888/tcp"                         # Gluetun Local Network HTTP proxy
+      # - "8388:8388/tcp"                         # Gluetun Local Network Shadowsocks
+      # - "8388:8388/udp"                         # Gluetun Local Network Shadowsocks
       - "${WEBUI_PORT_QBITTORRENT:?err}:${WEBUI_PORT_QBITTORRENT:?err}"   # WebUI Portal: qBittorrent
       - "${WEBUI_PORT_TRANSMISSION:?err}:${WEBUI_PORT_TRANSMISSION:?err}"   # WebUI Portal: qBittorrent
       # - "${QBIT_PORT_TCP:?err}:6881/tcp"        # Transmission Torrent Port TCP
@@ -69,8 +69,12 @@ services:
       # - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       # - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       # - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
-      - HTTPPROXY=on
-      - SHADOWSOCKS=on
+      - DOT_CACHING=off
+      # HTTPPROXY and SHADOWSOCKS disabled to reduce memory usage.
+      # No containers use these proxies - VPN traffic goes through network_mode: "service:gluetun" instead.
+      # Previous values: HTTPPROXY=on, SHADOWSOCKS=on
+      - HTTPPROXY=off
+      - SHADOWSOCKS=off
       - UPDATER_PERIOD=24h
       - PORT_FORWARD_ONLY=true
       - VPN_PORT_FORWARDING=true
@@ -167,9 +171,8 @@ services:
     image: registry.gitlab.com/alexkm/qbittools
     network_mode: "service:gluetun"
     container_name: qbittools
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/qbittorrent/config:/qBittorrent
-    command: reannounce -C /qBittorrent/qBittorrent.conf
+    mem_limit: 128m
+    command: reannounce -s localhost:${WEBUI_PORT_QBITTORRENT:?err}
     restart: unless-stopped
 
 ###########################################################################

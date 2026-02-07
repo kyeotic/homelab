@@ -146,8 +146,8 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.20:8500
 	}
 
-	@dockerstats host dockerstats.local.kye.dev
-	handle @dockerstats {
-		reverse_proxy 192.168.0.20:5001
+	@beszel host beszel.local.kye.dev
+	handle @beszel {
+		reverse_proxy 192.168.0.20:8190
 	}
 }
