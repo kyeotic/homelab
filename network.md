@@ -27,11 +27,7 @@ This document details the network design for the homelab.
 | Portainer    | 192.168.0.20    | Docker and Portainer                         |
 | Coen's Range | 192.168.0.21-30 | Coen's IP Range for local devices            |
 | Kye-1        | 192.168.0.100   | Tims Main PC                                 |
-| Kate         | 192.168.0.105   | Kate's iPhone                                |
 | KyeNAS       | 192.168.0.200   | Old Synology NAS, deprecated                 |
-| Ionir        | 192.168.0.201   | Tims iPhone                                  |
-| Kate iPhone  | 192.168.0.202   | Kates iPhone                                 |
-| Coen iPhone  | 192.168.0.203   | Coens iPhone                                 |
 
 
 ## Utilities

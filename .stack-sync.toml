@@ -33,6 +33,10 @@ compose_file = "apps/registry.yaml"
 compose_file = "apps/beszel/beszel.yaml"
 env_file = "apps/beszel/.env"
 
+[stacks.dockge]
+compose_file = "apps/dockge.yaml"
+enabled = false
+
 [stacks.dozzle]
 compose_file = "apps/dozzle.yaml"
 enabled = false

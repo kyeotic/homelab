@@ -151,6 +151,11 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.20:8190
 	}
 
+	@dockge host dockge.local.kye.dev
+	handle @dockge {
+		reverse_proxy 192.168.0.20:5001
+	}
+
 	@dozzle host dozzle.local.kye.dev
 	handle @dozzle {
 		reverse_proxy 192.168.0.20:8084
