@@ -1,0 +1,46 @@
+mode = "ssh"
+host = "192.168.0.20"
+ssh_user = "root"                   # optional, defaults to current user
+ssh_key = "~/.ssh/id_ed25519"       # optional, uses ssh-agent if omitted
+host_dir = "/mnt/app_config/dockru"
+
+# [stacks.mealie]
+# compose_file = "apps/mealie/mealie.yaml"
+# env_file = "apps/mealie/.env"
+
+# [stacks.servarr]
+# compose_file = "apps/servarr/servarr.yaml"
+# env_file = "apps/servarr/.env"
+
+# [stacks.home-assistant]
+# compose_file = "apps/home-assistant.yaml"
+
+# [stacks.scrypted]
+# compose_file = "apps/scrypted/scrypted.yaml"
+# env_file = "apps/scrypted/.env"
+
+# [stacks.syncthing]
+# compose_file = "apps/syncthing.yaml"
+
+# [stacks.ffmpeg]
+# compose_file = "apps/ffmpeg.yaml"
+
+# [stacks.core-keeper]
+# compose_file = "apps/games/core-keeper/core-keeper.yaml"
+# env_file = "apps/games/core-keeper/.env"
+
+# [stacks.uptime-kuma]
+# compose_file = "apps/uptime-kuma.yaml"
+
+# [stacks.registry]
+# compose_file = "apps/registry.yaml"
+
+# [stacks.beszel]
+# compose_file = "apps/beszel/beszel.yaml"
+# env_file = "apps/beszel/.env"
+
+[stacks.dockru]
+compose_file = "apps/dockru.yaml"
+
+[stacks.dozzle]
+compose_file = "apps/dozzle.yaml"
