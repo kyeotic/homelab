@@ -9,7 +9,7 @@ services:
       - 5051:5001
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
+      - /mnt/app_config/dockru/data:/app/data
 
       # If you want to use private registries, you need to share the auth file with Dockru:
       # - /root/.docker/:/root/.docker
@@ -23,3 +23,10 @@ services:
     environment:
       # Tell Dockru where is your stacks directory
       - DOCKRU_STACKS_DIR=/mnt/app_config/dockru
+      - DOCKRU_ENABLE_CONSOLE=true
+      # - RUST_LOG=debug
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
