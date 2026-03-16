@@ -512,18 +512,18 @@ services:
 ##  Function:             Audio Books UI
 ##  Documentation:        https://www.audiobookshelf.org/docs/#docker-compose-install
 ###########################################################################
-  # audiobookshelf:
-  #   container_name: audiobookshelf
-  #   image: ghcr.io/advplyr/audiobookshelf:latest
-  #   ports:
-  #     - 13378:80
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/audiobookshelf:/config
-  #     - ${FOLDER_FOR_MEDIA:?err}/media/reading/audiobooks:/audiobooks
-  #     - ${FOLDER_FOR_MEDIA:?err}/media/podcasts:/podcasts
-  #     - ${FOLDER_FOR_MEDIA:?err}/media/reading/abs-metadata:/metadata
-  #   environment:
-  #     - TZ=${TIMEZONE:?err}
+  audiobookshelf:
+    container_name: audiobookshelf
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    ports:
+      - 13378:80
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/audiobookshelf:/config
+      - ${FOLDER_FOR_MEDIA:?err}/media/reading/audiobooks:/audiobooks
+      - ${FOLDER_FOR_MEDIA:?err}/media/podcasts:/podcasts
+      - ${FOLDER_FOR_MEDIA:?err}/media/reading/abs-metadata:/metadata
+    environment:
+      - TZ=${TIMEZONE:?err}
 
 ###########################################################################
 ##  Docker Compose File:  Unpackerr (Hotio.Dev)
@@ -611,6 +611,33 @@ services:
       - RADARR_URL=http://radarr:7878
       - RADARR_API_KEY=${RADARR_API_KEY}
       - RECYCLARR_CREATE_CONFIG=true
+
+###########################################################################
+##  Docker Compose File:  Listenarr
+##  Function:             Audiobooks Library Manager
+##  Documentation:        https://github.com/Listenarrs/Listenarr
+###########################################################################
+  listenarr:
+    image: ghcr.io/listenarrs/listenarr:canary
+    # user: ${PUID:?err}:${PGID:?err}
+    ports:
+      - "4545:4545"
+    environment:
+      - LISTENARR_PUBLIC_URL=https://your-domain.com ## OPTIONAL: Used by Discord Bot
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+    volumes:
+      # - listenarr_data:/app/config
+      # - /path/to/audiobooks:/audiobooks #optional
+      # - /path/to/downloadclient-downloads:/downloads #optional
+      - ${FOLDER_FOR_CONFIGS:?err}/listenarr:/app/config
+      - ${FOLDER_FOR_MEDIA:?err}/media/reading/audiobooks:/data/media
+      - ${FOLDER_FOR_MEDIA:?err}/torrents:/downloads/torrents
+      - ${FOLDER_FOR_MEDIA:?err}/usenet:/downloads/usenet
+    restart: unless-stopped
+
 ###########################################################################
 ##  Docker Compose File:  rdt-client
 ##  Function:             Debrid download client

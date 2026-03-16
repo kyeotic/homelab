@@ -126,6 +126,11 @@ homelab.kye.dev {
 	handle @audiobooks {
 		reverse_proxy 192.168.0.20:13378
 	}
+
+	@listenarr host listenarr.local.kye.dev
+	handle @listenarr {
+		reverse_proxy 192.168.0.20:4545
+	}
 	
 	@scrypted host scrypted.local.kye.dev
 	handle @scrypted {
