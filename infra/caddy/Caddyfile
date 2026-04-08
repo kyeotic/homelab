@@ -165,4 +165,9 @@ homelab.kye.dev {
 	handle @dozzle {
 		reverse_proxy 192.168.0.20:8084
 	}
+
+	@litr host litr.local.kye.dev
+	handle @litr {
+		reverse_proxy 192.168.0.20:3077
+	}
 }
