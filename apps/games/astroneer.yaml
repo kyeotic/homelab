@@ -1,0 +1,17 @@
+services:
+  astroneer:
+    container_name: astroneer
+    image: docker.io/barumel/docker-astroneer-server:latest
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    ports:
+      - 8777:8777/udp
+      - 8777:8777/tcp
+    environment:
+      ASTRO_SERVER_NAME: "Kyeotek"
+      ASTRO_SERVER_PASSWORD: "kyrell"
+      ASTRO_SERVER_OWNER_NAME: "zavier_xero"
+    volumes:
+      - /mnt/nas/game-saves/astroneer:/astroneer
+      - /etc/machine-id:/etc/machine-id:ro

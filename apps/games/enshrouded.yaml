@@ -9,9 +9,7 @@ services:
     env_file:
       - stack.env
     volumes:
-      - /mnt/game-saves/enshrouded:/home/steam/enshrouded/savegame
-### ENV
-# chown -R 10000:10000 /mnt/game-saves/enshrouded
+      - /mnt/nas/game-saves/enshrouded:/home/steam/enshrouded/savegame
 
 SERVER_NAME="Foggy Loggins"
 SERVER_PASSWORD=logeditor

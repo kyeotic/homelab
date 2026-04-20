@@ -37,8 +37,11 @@ infra/proxmox/
 - `homelab` (192.168.0.10) - Proxmox host
 - `caddy-container` (192.168.0.13) - Caddy reverse proxy
 - `docker` (192.168.0.20) - Docker/Portainer host
+- `kye-nas` (192.168.0.11) - Samba LXC (VMID 102)
 
-**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`
+All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
+
+**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-samba`, `fix-perms`
 
 ### Roles
 

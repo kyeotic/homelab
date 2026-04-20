@@ -69,51 +69,37 @@ See [Home Assisstant](./hoas.md)
 
 Create or import the zfs pool. [This video](https://www.youtube.com/watch?v=oSD-VoloQag) can with creation.
 
-### Host Setup
+### UID/GID Mapping Model
 
-On the host we will map
-uid: 101000 (maps to LXC 1000)
-gid: 110000 (maps to LXC 10000)
+Unprivileged LXCs apply a +100000 offset to all UIDs/GIDs. The shared user/group is:
 
-```
-# Create the group that maps to nas_shares on the lxc
-groupadd -g 110000 nas_shares
+| Entity | Host | Inside any LXC |
+|---|---|---|
+| `nas` user | UID 101000 | UID 1000 |
+| `nas_shares` group | GID 110000 | GID 10000 |
 
-# Create the mapped user
-useradd nas -u 101000 -g 110000 -m -s /bin/bash
+All Docker apps use `PUID=1000 PGID=10000` so they run as the `nas` user and `nas_shares` group on the host.
 
-# Move ownership to the mapped user
-chown -R nas:nas_shares /tank/apps/
-chown -R nas:nas_shares /tank/media_root/
-chown -R nas:nas_shares /tank/nas
+### Datasets and Permissions
 
+All managed by the `zfs-pool` and `lxc-users` Ansible roles — do not set manually.
 
-# set recursive acl
-setfacl -Rm g:nas_shares:rwx /tank/media_root/
-```
+| Dataset | Mount in Docker LXC | Mount in Samba LXC | Mode | ACL |
+|---|---|---|---|---|
+| `/tank/apps` | `/mnt/app_config` | `/mnt/apps` | `0775` | `g:nas_shares:rwx` (access + default) |
+| `/tank/media_root` | `/mnt/media_root` | `/mnt/media_root` | `0775` | `g:nas_shares:rwx` (access + default) |
+| `/tank/nas` | `/mnt/nas` | `/mnt/nas` | `0775` | `g:nas_shares:rwx` (access + default) |
+| `/tank/os` | — | — | `0755` | none |
 
-For each LXC that needs a mount
+All three writable datasets use `acltype=posix`, `aclmode=passthrough`, `aclinherit=passthrough`. Default ACLs ensure new files/dirs created by any process (Docker, Samba, Syncthing) inherit `g:nas_shares:rwx`.
 
-```
-pct set 105 -mp0 /tank/media_root,mp=/mnt/media_root
-pct set 105 -mp1 /tank/apps,mp=/mnt/app_config
+### Repairing Permissions
 
-# for games
-pct set 110 -mp1 /tank/nas/game-saves,mp=/mnt/game-saves
-```
+If permissions drift (e.g. a container creates files as root, or ownership gets mangled):
 
-User perms still follow [this idea](https://forum.proxmox.com/threads/tutorial-unprivileged-lxcs-mount-cifs-shares.101795/)
-
-### LXC Setup
-
-1. 
-```
-# In the LXC (run commands as root user)
-groupadd -g 10000 nas_shares
-
-# create a user in that group for docker to use (use `nas` for cockpit)
-useradd docker -u 1000 -g 10000 -m -s /bin/bash
-
+```bash
+just deploy fix-perms     # recursive setfacl on all datasets
+just deploy sync-samba    # re-apply samba share directory ownership
 ```
 
 

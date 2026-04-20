@@ -38,3 +38,6 @@ compose_file = "apps/dockru.yaml"
 
 [stacks.dozzle]
 compose_file = "apps/dozzle.yaml"
+
+[stacks.astroneer]
+compose_file = "apps/games/astroneer.yaml"

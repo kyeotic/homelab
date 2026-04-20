@@ -2,6 +2,7 @@
 # ZFS Pool setup
 # - Skips if pool already exists
 # - Prompts for action if pool doesn't exist: import, create, test, or skip
+# - Always ensures nas user/group and dataset ownership/ACLs are correct
 
 - name: check if zfs pool exists
   ansible.builtin.command: zpool list {{ zfs_pool_name }}
@@ -14,115 +15,83 @@
     msg: "ZFS pool '{{ zfs_pool_name }}' already exists and is mounted"
   when: pool_check.rc == 0
 
-- name: check for importable pools
-  ansible.builtin.command: zpool import
-  register: importable_pools
-  failed_when: false
-  changed_when: false
+# --- Initial pool + dataset creation (only when pool doesn't exist) ---
+- name: set up pool and datasets
   when: pool_check.rc != 0
-
-- name: prompt for zfs pool action
-  ansible.builtin.pause:
-    prompt: |
-
-      ZFS pool '{{ zfs_pool_name }}' does not exist.
-
-      Available pools to import:
-      {{ importable_pools.stdout | default('(none found)') }}
-
-      Choose an action:
-        [import] - Import existing pool from external drives
-        [create] - Create new pool with datasets and permissions (configure zfs_pool_disks first)
-        [test]   - Create a test pool using sparse files (for testing only)
-        [skip]   - Skip ZFS setup (tasks depending on pool will fail)
-
-      Enter choice [import/create/test/skip]
-  register: zfs_action
-  when: pool_check.rc != 0
-
-# --- Import existing pool ---
-- name: import existing zfs pool
-  ansible.builtin.command: zpool import {{ zfs_pool_name }}
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'import'
-
-# --- Create real pool ---
-- name: validate pool disks are configured
-  ansible.builtin.fail:
-    msg: "zfs_pool_disks must be set to create a real pool. Configure in inventory or group_vars."
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'create'
-    - zfs_pool_disks | length == 0
-
-- name: create zfs pool
-  ansible.builtin.command: >
-    zpool create
-    -o ashift={{ zfs_pool_ashift }}
-    {{ zfs_pool_name }}
-    {{ zfs_pool_type }}
-    {{ zfs_pool_disks | join(' ') }}
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'create'
-    - zfs_pool_disks | length > 0
-
-# --- Create test pool ---
-- name: create test pool directory
-  ansible.builtin.file:
-    path: /tmp/zfs-test
-    state: directory
-    mode: '0755'
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'test'
-
-- name: create sparse file for test pool
-  ansible.builtin.command: truncate -s {{ zfs_test_pool_size }} /tmp/zfs-test/disk.img
-  args:
-    creates: /tmp/zfs-test/disk.img
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'test'
-
-- name: create test zfs pool
-  ansible.builtin.command: zpool create {{ zfs_pool_name }} /tmp/zfs-test/disk.img
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'test'
-
-# --- Skip ---
-- name: skipping zfs setup
-  ansible.builtin.debug:
-    msg: "Skipping ZFS pool setup. Tasks depending on /{{ zfs_pool_name }} may fail."
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | lower == 'skip'
-
-# --- Configure datasets (runs after create, test, or import) ---
-- name: configure datasets and permissions
-  when:
-    - pool_check.rc != 0
-    - zfs_action.user_input | default('skip') | lower in ['create', 'test', 'import']
   block:
-    # Create NAS user and group
-    - name: create nas group
-      ansible.builtin.group:
-        name: "{{ nas_group }}"
-        gid: "{{ nas_gid }}"
-        state: present
+    - name: check for importable pools
+      ansible.builtin.command: zpool import
+      register: importable_pools
+      failed_when: false
+      changed_when: false
 
-    - name: create nas user
-      ansible.builtin.user:
-        name: "{{ nas_user }}"
-        uid: "{{ nas_uid }}"
-        group: "{{ nas_group }}"
-        shell: /bin/bash
-        create_home: yes
-        state: present
+    - name: prompt for zfs pool action
+      ansible.builtin.pause:
+        prompt: |
 
-    # Create datasets
+          ZFS pool '{{ zfs_pool_name }}' does not exist.
+
+          Available pools to import:
+          {{ importable_pools.stdout | default('(none found)') }}
+
+          Choose an action:
+            [import] - Import existing pool from external drives
+            [create] - Create new pool with datasets and permissions (configure zfs_pool_disks first)
+            [test]   - Create a test pool using sparse files (for testing only)
+            [skip]   - Skip ZFS setup (tasks depending on pool will fail)
+
+          Enter choice [import/create/test/skip]
+      register: zfs_action
+
+    # --- Import existing pool ---
+    - name: import existing zfs pool
+      ansible.builtin.command: zpool import {{ zfs_pool_name }}
+      when: zfs_action.user_input | lower == 'import'
+
+    # --- Create real pool ---
+    - name: validate pool disks are configured
+      ansible.builtin.fail:
+        msg: "zfs_pool_disks must be set to create a real pool. Configure in inventory or group_vars."
+      when:
+        - zfs_action.user_input | lower == 'create'
+        - zfs_pool_disks | length == 0
+
+    - name: create zfs pool
+      ansible.builtin.command: >
+        zpool create
+        -o ashift={{ zfs_pool_ashift }}
+        {{ zfs_pool_name }}
+        {{ zfs_pool_type }}
+        {{ zfs_pool_disks | join(' ') }}
+      when:
+        - zfs_action.user_input | lower == 'create'
+        - zfs_pool_disks | length > 0
+
+    # --- Create test pool ---
+    - name: create test pool directory
+      ansible.builtin.file:
+        path: /tmp/zfs-test
+        state: directory
+        mode: '0755'
+      when: zfs_action.user_input | lower == 'test'
+
+    - name: create sparse file for test pool
+      ansible.builtin.command: truncate -s {{ zfs_test_pool_size }} /tmp/zfs-test/disk.img
+      args:
+        creates: /tmp/zfs-test/disk.img
+      when: zfs_action.user_input | lower == 'test'
+
+    - name: create test zfs pool
+      ansible.builtin.command: zpool create {{ zfs_pool_name }} /tmp/zfs-test/disk.img
+      when: zfs_action.user_input | lower == 'test'
+
+    # --- Skip ---
+    - name: skipping zfs setup
+      ansible.builtin.debug:
+        msg: "Skipping ZFS pool setup. Tasks depending on /{{ zfs_pool_name }} may fail."
+      when: zfs_action.user_input | lower == 'skip'
+
+    # --- Create datasets (after create, test, or import) ---
     - name: create zfs datasets
       community.general.zfs:
         name: "{{ zfs_pool_name }}/{{ item.name }}"
@@ -131,8 +100,8 @@
       loop: "{{ zfs_datasets }}"
       loop_control:
         label: "{{ zfs_pool_name }}/{{ item.name }}"
+      when: zfs_action.user_input | lower in ['create', 'test', 'import']
 
-    # Set root dataset properties
     - name: set pool root properties
       community.general.zfs:
         name: "{{ zfs_pool_name }}"
@@ -140,40 +109,98 @@
         extra_zfs_properties:
           aclmode: passthrough
           aclinherit: passthrough
+      when: zfs_action.user_input | lower in ['create', 'test', 'import']
 
-    # Set dataset ownership and permissions
-    - name: set dataset ownership
-      ansible.builtin.file:
-        path: "/{{ zfs_pool_name }}/{{ item.name }}"
-        owner: "{{ item.owner | default('root') }}"
-        group: "{{ item.group | default('root') }}"
-        mode: "{{ item.mode | default('0755') }}"
-        state: directory
-      loop: "{{ zfs_datasets }}"
-      loop_control:
-        label: "{{ zfs_pool_name }}/{{ item.name }}"
+# --- Always ensure permissions when pool is accessible ---
+- name: check if pool directory is accessible
+  ansible.builtin.stat:
+    path: "/{{ zfs_pool_name }}"
+  register: pool_stat
+  tags: [fix-perms]
 
-    # Set ACLs on datasets (access ACL)
-    - name: set dataset access ACLs
-      ansible.posix.acl:
-        path: "/{{ zfs_pool_name }}/{{ item.0.name }}"
-        entity: "{{ item.1.split(':')[1] }}"
-        etype: "{{ 'group' if item.1.startswith('g:') else 'user' }}"
-        permissions: "{{ item.1.split(':')[2] }}"
-        state: present
-      loop: "{{ zfs_datasets | selectattr('acl', 'defined') | list | subelements('acl') }}"
-      loop_control:
-        label: "{{ zfs_pool_name }}/{{ item.0.name }} - {{ item.1 }}"
+- name: ensure dataset properties are set
+  community.general.zfs:
+    name: "{{ zfs_pool_name }}/{{ item.name }}"
+    state: present
+    extra_zfs_properties: "{{ item.properties }}"
+  loop: "{{ zfs_datasets | selectattr('properties', 'defined') | list }}"
+  loop_control:
+    label: "{{ zfs_pool_name }}/{{ item.name }}"
+  when: pool_stat.stat.exists
 
-    # Set default ACLs on datasets (inherited by new files/directories)
-    - name: set dataset default ACLs
-      ansible.posix.acl:
-        path: "/{{ zfs_pool_name }}/{{ item.0.name }}"
-        entity: "{{ item.1.split(':')[1] }}"
-        etype: "{{ 'group' if item.1.startswith('g:') else 'user' }}"
-        permissions: "{{ item.1.split(':')[2] }}"
-        default: yes
-        state: present
-      loop: "{{ zfs_datasets | selectattr('acl', 'defined') | list | subelements('acl') }}"
-      loop_control:
-        label: "{{ zfs_pool_name }}/{{ item.0.name }} - {{ item.1 }}"
+- name: ensure nas group exists
+  ansible.builtin.group:
+    name: "{{ nas_group }}"
+    gid: "{{ nas_gid }}"
+    state: present
+  when: pool_stat.stat.exists
+
+- name: ensure nas user exists
+  ansible.builtin.user:
+    name: "{{ nas_user }}"
+    uid: "{{ nas_uid }}"
+    group: "{{ nas_group }}"
+    shell: /bin/bash
+    create_home: yes
+    state: present
+  when: pool_stat.stat.exists
+
+- name: set dataset ownership
+  ansible.builtin.file:
+    path: "/{{ zfs_pool_name }}/{{ item.name }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+    state: directory
+  loop: "{{ zfs_datasets }}"
+  loop_control:
+    label: "{{ zfs_pool_name }}/{{ item.name }}"
+  when: pool_stat.stat.exists
+
+- name: set dataset access ACLs
+  ansible.posix.acl:
+    path: "/{{ zfs_pool_name }}/{{ item.0.name }}"
+    entity: "{{ item.1.split(':')[1] }}"
+    etype: "{{ 'group' if item.1.startswith('g:') else 'user' }}"
+    permissions: "{{ item.1.split(':')[2] }}"
+    state: present
+  loop: "{{ zfs_datasets | selectattr('acl', 'defined') | list | subelements('acl') }}"
+  loop_control:
+    label: "{{ zfs_pool_name }}/{{ item.0.name }} - {{ item.1 }}"
+  when: pool_stat.stat.exists
+
+- name: set dataset default ACLs
+  ansible.posix.acl:
+    path: "/{{ zfs_pool_name }}/{{ item.0.name }}"
+    entity: "{{ item.1.split(':')[1] }}"
+    etype: "{{ 'group' if item.1.startswith('g:') else 'user' }}"
+    permissions: "{{ item.1.split(':')[2] }}"
+    default: yes
+    state: present
+  loop: "{{ zfs_datasets | selectattr('acl', 'defined') | list | subelements('acl') }}"
+  loop_control:
+    label: "{{ zfs_pool_name }}/{{ item.0.name }} - {{ item.1 }}"
+  when: pool_stat.stat.exists
+
+# Run with: just deploy fix-perms
+# Repairs ACLs on all existing files/dirs inside each dataset.
+# Not run on every deploy — only when permissions have drifted.
+- name: apply access ACLs recursively to dataset contents
+  ansible.builtin.shell: >
+    setfacl -Rm {{ item.1 }} /{{ zfs_pool_name }}/{{ item.0.name }}
+  loop: "{{ zfs_datasets | selectattr('acl', 'defined') | list | subelements('acl') }}"
+  loop_control:
+    label: "{{ zfs_pool_name }}/{{ item.0.name }} - {{ item.1 }}"
+  when: pool_stat.stat.exists
+  changed_when: false
+  tags: [fix-perms]
+
+- name: apply default ACLs recursively to dataset subdirectories
+  ansible.builtin.shell: >
+    setfacl -Rdm {{ item.1 }} /{{ zfs_pool_name }}/{{ item.0.name }}
+  loop: "{{ zfs_datasets | selectattr('acl', 'defined') | list | subelements('acl') }}"
+  loop_control:
+    label: "{{ zfs_pool_name }}/{{ item.0.name }} - {{ item.1 }}"
+  when: pool_stat.stat.exists
+  changed_when: false
+  tags: [fix-perms]

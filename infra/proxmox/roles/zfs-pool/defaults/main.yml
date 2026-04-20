@@ -16,9 +16,15 @@ zfs_pool_ashift: 12
 # Dataset definitions
 zfs_datasets:
   - name: apps
+    properties:
+      acltype: posix
+      aclmode: passthrough
+      aclinherit: passthrough
     owner: "{{ nas_user }}"
     group: "{{ nas_group }}"
-    mode: "0755"
+    mode: "0775"
+    acl:
+      - "g:{{ nas_group }}:rwx"
 
   - name: media_root
     properties:
@@ -32,17 +38,15 @@ zfs_datasets:
       - "g:{{ nas_group }}:rwx"
 
   - name: nas
-    owner: "101001"  # Maps to container UID 1001 (with 100000 subuid offset)
+    properties:
+      acltype: posix
+      aclmode: passthrough
+      aclinherit: passthrough
+    owner: "{{ nas_user }}"
     group: "{{ nas_group }}"
-    mode: "0777"
-    # Im not sure if nas should have the ACL, especially the default acl
-    # because syncthing wants to manage permissions on the sync-drive
-    # properties:
-    #   acltype: posix
-    #   aclmode: passthrough
-    #   aclinherit: passthrough
-    # acl:
-    #   - "g:{{ nas_group }}:rwx"
+    mode: "0775"
+    acl:
+      - "g:{{ nas_group }}:rwx"
 
   - name: os
     properties:

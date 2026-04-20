@@ -9,7 +9,7 @@ services:
     #   - "$SERVER_PORT:$SERVER_PORT/udp"
     volumes:
       - core-keerper-data:/home/steam/core-keeper-dedicated
-      - /mnt/nas/gave_saves/core-keeper:/home/steam/core-keeper-data
+      - /mnt/nas/game-saves/core-keeper:/home/steam/core-keeper-data
     environment:
       - PASSWORD=${PASSWORD:?err}
       - WORLD_NAME=${WORLD_NAME:?err}

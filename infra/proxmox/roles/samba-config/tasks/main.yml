@@ -56,7 +56,7 @@
     path: "{{ item.path }}"
     state: directory
     owner: "{{ samba_user }}"
-    group: "{{ samba_user }}"
+    group: "{{ samba_group_name }}"
     mode: "0775"
   loop: "{{ samba_shares }}"
 
