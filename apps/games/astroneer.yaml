@@ -8,10 +8,17 @@ services:
     ports:
       - 8777:8777/udp
       - 8777:8777/tcp
+      - 27015:27015/udp
     environment:
+      PUID: 1000
+      PGID: 10000
       ASTRO_SERVER_NAME: "Kyeotek"
       ASTRO_SERVER_PASSWORD: "kyrell"
       ASTRO_SERVER_OWNER_NAME: "zavier_xero"
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
     volumes:
       - /mnt/nas/game-saves/astroneer:/astroneer
       - /etc/machine-id:/etc/machine-id:ro
