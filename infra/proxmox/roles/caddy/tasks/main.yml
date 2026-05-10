@@ -16,12 +16,13 @@
     mode: '0644'
 
 - name: create env file with secrets
-  tags: [setup-caddy]
+  tags: [setup-caddy, sync, sync-caddy]
   ansible.builtin.copy:
     content: |
       CF_API_TOKEN={{ cloudflare_api_token }}
     dest: /root/caddy/.env
     mode: '0600'
+  register: caddy_env_sync
 
 - name: sync Caddyfile
   tags: [setup-caddy, sync, sync-caddy]
@@ -38,9 +39,9 @@
     chdir: /root/caddy
   changed_when: false
 
-- name: recreate caddy container to pick up new Caddyfile
+- name: recreate caddy container to pick up new config
   tags: [setup-caddy, sync, sync-caddy]
   ansible.builtin.command:
     cmd: docker compose up -d --force-recreate
     chdir: /root/caddy
-  when: caddyfile_sync.changed
+  when: caddyfile_sync.changed or caddy_env_sync.changed
