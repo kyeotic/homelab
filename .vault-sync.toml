@@ -25,3 +25,7 @@ path = "apps/games/core-keeper/.env"
 [secrets.stack-sync]
 id = "926503a1-3507-411b-a0bc-b3e60127ffed"
 path = "{{ env.HOME }}/.stack-sync.toml"
+
+[secrets.obsidian-livesync]
+id = "cd20b575-8e87-4e9a-ad62-b47400efbc62"
+path = "apps/obsidian-livesync/.env"

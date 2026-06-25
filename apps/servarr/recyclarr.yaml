@@ -1,3 +1,8 @@
+# Deploy (run from repo root): push this config to the docker host and sync.
+# The remote file is removed first because its ZFS ACL can block root from
+# truncating it in place.
+#   ssh root@192.168.0.20 'rm -f /mnt/app_config/recyclarr/recyclarr.yml' && scp apps/servarr/recyclarr.yaml root@192.168.0.20:/mnt/app_config/recyclarr/recyclarr.yml && ssh root@192.168.0.20 'chown 1000:10000 /mnt/app_config/recyclarr/recyclarr.yml && chmod 664 /mnt/app_config/recyclarr/recyclarr.yml && docker exec recyclarr recyclarr sync'
+
 #################################################
 ### Sonarr
 #################################################
@@ -74,13 +79,79 @@ sonarr:
     # What is the rational for custom formats?
     # Lets make one and find out what it does
     custom_formats:
-      # Common Formats
+      # ================================================================
+      #  TUNABLE SCORE WEIGHTS  (edit the &anchor numbers below)
+      # ----------------------------------------------------------------
+      #  recyclarr has no standalone variables block, so the weights are
+      #  YAML anchors (&name) defined on first use here in the sonarr
+      #  section and reused (*name) in every profile AND in the Radarr
+      #  section below. Edit a number once; it applies everywhere.
+      #
+      #    &primary   – dominant ranking key in a profile
+      #    &secondary – tie-break key (sized to beat tiers/DV/audio)
+      #    &dv_boost  – small nudge so Dolby Vision sits above plain HDR
+      #    &audio_penalty – HD/lossless audio (Apple TV can't bitstream → transcodes)
+      #
+      #  Which key is PRIMARY flips per profile:
+      #    4K profile       -> resolution PRIMARY, HDR SECONDARY
+      #         4K HDR > 4K SDR > 1080p        (SDR accepted, far under HDR)
+      #    1080p/4K profile -> HDR PRIMARY, resolution SECONDARY
+      #         4K HDR > 1080p HDR > 4K SDR > 1080p SDR
+      #
+      #  Keep this hierarchy when tweaking (release-group tiers ~1950 are the floor):
+      #     primary  > secondary + top_tier + dv_boost
+      #     secondary > top_tier + dv_boost
+      #  Maxed-out release ≈ primary + secondary + tier + dv_boost (~10k).
+      # ================================================================
+
+      # HDR — PRIMARY where HDR rules; SECONDARY in the 4K profile
       - trash_ids:
-          # HDR Formats (TRaSH consolidated these into HDR + DV Boost;
-          # resolution + SDR scoring live in their own blocks below)
-          - 3a4127d8aa781b44120d907f2cd62627 # Hybrid
           - 505d871304820ba7106b693be6fe4a9e # HDR
+        assign_scores_to:
+          - name: 1080p Only
+            score: &primary 5000
+          - name: 1080p/4K
+            score: *primary
+          - name: 4K
+            score: &secondary 2500
+      # 2160p — PRIMARY in the 4K profile; SECONDARY in 1080p/4K
+      - trash_ids:
+          - 1bef6c151fa35093015b0bfef18279e5 # 2160p
+        assign_scores_to:
+          - name: 1080p/4K
+            score: *secondary
+          - name: 4K
+            score: *primary
+      # DV Boost — nudge Dolby Vision above plain HDR (within a tier)
+      - trash_ids:
           - 7c3a61a9c6cb04f52f1544be6d44a026 # DV Boost
+        assign_scores_to:
+          - name: 1080p Only
+            score: &dv_boost 250
+          - name: 1080p/4K
+            score: *dv_boost
+          - name: 4K
+            score: *dv_boost
+      # HD/lossless audio — Apple TV (Plex) can't bitstream these → transcodes
+      - trash_ids:
+          - 0d7824bb924701997f874e7ff7d4844a # TrueHD ATMOS
+          - 1808e4b9cee74e064dfae3f1db99dbfe # TrueHD
+          - 9d00418ba386a083fbf4d58235fc37ef # DTS X
+          - c429417a57ea8c41d57e6990a8b0033f # DTS-HD MA
+          - cfa5fbd8f02a86fc55d8d223d06a5e1f # DTS-HD HRA
+          - 851bd64e04c9374c51102be3dd9ae4cc # FLAC
+          - 30f70576671ca933adbdcfc736a69718 # PCM
+        assign_scores_to:
+          - name: 1080p Only
+            score: &audio_penalty -1000
+          - name: 1080p/4K
+            score: *audio_penalty
+          - name: 4K
+            score: *audio_penalty
+
+      # Common Formats — guide-default scores (tiers, streaming, hybrid, unwanted)
+      - trash_ids:
+          - 3a4127d8aa781b44120d907f2cd62627 # Hybrid
 
           # HQ Source
           - 9965a052eb87b0d10313b1cea89eb451 # Remux Tier 01
@@ -109,64 +180,6 @@ sonarr:
           # - e1a997ddb54e3ecbfe06341ad323c458 # Obfuscated
           # - 06d66ab109d4d2eddb2794d21526d140 # Retags
           # - 1b3994c551cbb92a2c781af061f4ab44 # Scene
-        assign_scores_to:
-          - name: 1080p/4K
-          - name: 4K
-          - name: 1080p Only
-
-      # HD/lossless audio — same Apple TV transcode concern as Radarr.
-      - trash_ids:
-          - 0d7824bb924701997f874e7ff7d4844a # TrueHD ATMOS
-          - 1808e4b9cee74e064dfae3f1db99dbfe # TrueHD
-          - 9d00418ba386a083fbf4d58235fc37ef # DTS X
-          - c429417a57ea8c41d57e6990a8b0033f # DTS-HD MA
-          - cfa5fbd8f02a86fc55d8d223d06a5e1f # DTS-HD HRA
-          - 851bd64e04c9374c51102be3dd9ae4cc # FLAC
-          - 30f70576671ca933adbdcfc736a69718 # PCM
-        assign_scores_to:
-          - name: 1080p Only
-            score: -1000
-          - name: 1080p/4K
-            score: -1000
-          - name: 4K
-            score: -1000
-
-      # ============================================================
-      #  4K-over-1080p score boost  (TWEAK HERE)
-      # ------------------------------------------------------------
-      #  2160p is scored far above 1080p so 4K always outranks 1080p
-      #  by score. To keep that guarantee for non-SDR releases, keep
-      #    (2160p score) - (1080p score)  >  the largest non-resolution
-      #  bonus a 1080p can stack. Today that ceiling is ~4500:
-      #    top tier 1900 + DV Boost 1000 + HDR 500 + Hybrid 100 + 1080p 1000.
-      #  Current gap = 9000, so there is ~4500 of headroom.
-      #  - Raise 2160p to separate the resolutions further.
-      #  - Lower the gap to let HDR/DV/tier scores outweigh resolution.
-      #  SDR penalty hits both resolutions equally and does NOT affect this.
-      # ============================================================
-      - trash_ids:
-          - 1bef6c151fa35093015b0bfef18279e5 # 2160p
-        assign_scores_to:
-          - name: 1080p/4K
-            score: 10000
-          - name: 4K
-            score: 10000
-          - name: 1080p Only
-            score: 10000
-      - trash_ids:
-          - 290078c8b266272a5cc8e251b5e2eb0b # 1080p
-        assign_scores_to:
-          - name: 1080p/4K
-            score: 1000
-          - name: 4K
-            score: 1000
-          - name: 1080p Only
-            score: 1000
-
-      # SDR penalty (kept strong, guide default -10000). Applies to 1080p and
-      # 2160p equally, so it never disturbs the resolution ranking among non-SDR.
-      - trash_ids:
-          - 2016d1676f5ee13a5b7257ff86ac9a93 # SDR
         assign_scores_to:
           - name: 1080p/4K
           - name: 4K
@@ -240,11 +253,8 @@ radarr:
     custom_formats:
       # Common
       - trash_ids:
-        # HDR Formats (TRaSH consolidated these into HDR + DV Boost;
-        # resolution + SDR scoring live in their own blocks below)
         # Profile-5 "DV w/o HDR fallback" penalty removed — the LG plays DV natively
-        - 493b6d1dbec3c3364c59d7607f7e3405 # HDR
-        - b337d6812e06c200ec9a2d3cfa9d20a7 # DV Boost
+        # (HDR / 2160p / DV Boost / audio use the shared anchors, in the ranking block below)
         # HQ Release Groups
         - 3a3ff47579026e76d6504ebea39390de # Remux Tier 01
         - 9f98181fe5a3fbeb0cc29340da2a468a # Remux Tier 02
@@ -278,11 +288,11 @@ radarr:
         - e7c2fcae07cbada050a0af3357491d7b # PCM
         assign_scores_to:
           - name: 1080p Only
-            score: -1000
+            score: *audio_penalty
           - name: 1080p/4K
-            score: -1000
+            score: *audio_penalty
           - name: 4K
-            score: -1000
+            score: *audio_penalty
 
 
       # 4K Only
@@ -304,42 +314,32 @@ radarr:
           - name: 1080p Only
 
       # ============================================================
-      #  4K-over-1080p score boost  (TWEAK HERE)
-      # ------------------------------------------------------------
-      #  2160p is scored far above 1080p so 4K always outranks 1080p
-      #  by score. To keep that guarantee for non-SDR releases, keep
-      #    (2160p score) - (1080p score)  >  the largest non-resolution
-      #  bonus a 1080p can stack. Today that ceiling is ~4600:
-      #    top tier 1950 + DV Boost 1000 + HDR 500 + Hybrid 100 + 1080p 1000.
-      #  Current gap = 9000, so there is ~4400 of headroom.
-      #  - Raise 2160p to separate the resolutions further.
-      #  - Lower the gap to let HDR/DV/tier scores outweigh resolution.
-      #  SDR penalty hits both resolutions equally and does NOT affect this.
+      #  Resolution + HDR ranking  (weights = shared anchors)
+      #  Edit the numbers in the TUNABLE SCORE WEIGHTS block at the top of
+      #  the sonarr section; these *aliases reuse them.
       # ============================================================
+      - trash_ids:
+        - b337d6812e06c200ec9a2d3cfa9d20a7 # DV Boost
+        assign_scores_to:
+          - name: 1080p Only
+            score: *dv_boost
+          - name: 1080p/4K
+            score: *dv_boost
+          - name: 4K
+            score: *dv_boost
+      - trash_ids:
+        - 493b6d1dbec3c3364c59d7607f7e3405 # HDR
+        assign_scores_to:
+          - name: 1080p Only
+            score: *primary
+          - name: 1080p/4K
+            score: *primary
+          - name: 4K
+            score: *secondary
       - trash_ids:
         - fb392fb0d61a010ae38e49ceaa24a1ef # 2160p
         assign_scores_to:
           - name: 1080p/4K
-            score: 10000
+            score: *secondary
           - name: 4K
-            score: 10000
-          - name: 1080p Only
-            score: 10000
-      - trash_ids:
-        - 820b09bb9acbfde9c35c71e0e565dad8 # 1080p
-        assign_scores_to:
-          - name: 1080p/4K
-            score: 1000
-          - name: 4K
-            score: 1000
-          - name: 1080p Only
-            score: 1000
-
-      # SDR penalty (kept strong, guide default -10000). Applies to 1080p and
-      # 2160p equally, so it never disturbs the resolution ranking among non-SDR.
-      - trash_ids:
-        - 9c38ebb7384dada637be8899efa68e6f # SDR
-        assign_scores_to:
-          - name: 1080p/4K
-          - name: 4K
-          - name: 1080p Only
+            score: *primary

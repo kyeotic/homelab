@@ -1,0 +1,27 @@
+services:
+  couchdb:
+    image: couchdb:latest
+    container_name: couchdb-for-ols
+    user: 1000:10000
+    environment:
+      - COUCHDB_USER=${DB_USER:?err}
+      - COUCHDB_PASSWORD=${DB_PASSWORD:?err}
+    volumes:
+      - /mnt/app_config/obsidian-livesync/data:/opt/couchdb/data
+      - /mnt/app_config/obsidian-livesync/etc:/opt/couchdb/etc/local.d
+    ports:
+      - 5984:5984
+    restart: unless-stopped
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: livesync-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:?err}
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "3"

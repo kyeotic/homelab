@@ -109,3 +109,4 @@ kubeconfig.yaml
 __pycache__/
 *.pyc
 plans/
+.claude/

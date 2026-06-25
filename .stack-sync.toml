@@ -41,3 +41,7 @@ compose_file = "apps/dozzle.yaml"
 
 [stacks.astroneer]
 compose_file = "apps/games/astroneer.yaml"
+
+[stacks.obsidian-livesync]
+compose_file = "apps/obsidian-livesync/livesync.yaml"
+env_file = "apps/obsidian-livesync/.env"
