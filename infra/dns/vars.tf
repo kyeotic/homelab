@@ -13,12 +13,6 @@ variable "mealie_domain" {
   default     = "cook"
 }
 
-variable "obsidian_livesync_domain" {
-  description = "Domain for Obsidian LiveSync CouchDB (e.g. livesync.kye.dev)"
-  type        = string
-  default     = "livesync"
-}
-
 variable "auth0_domain" {
   description = "Auth0 tenant domain (e.g. dev-xxx.us.auth0.com)"
   type        = string
