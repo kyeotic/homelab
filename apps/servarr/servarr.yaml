@@ -664,21 +664,21 @@ services:
   #   restart: unless-stopped
   #   network_mode: "service:gluetun"
 
-  # firefox:
-  #   image: lscr.io/linuxserver/firefox:latest
-  #   container_name: firefox
-  #   security_opt:
-  #     - seccomp:unconfined #optional
-  #   environment:
-  #     - PUID=${PUID:?err}
-  #     - PGID=${PGID:?err}
-  #     - TZ=${TIMEZONE:?err}
-  #     - FIREFOX_CLI=https://www.linuxserver.io/ #optional
-  #   volumes:
-  #     - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
-  #   shm_size: "1gb"
-  #   restart: no
-  #   network_mode: "service:gluetun"
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+      - FIREFOX_CLI=https://www.linuxserver.io/ #optional
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
+    shm_size: "1gb"
+    restart: no
+    network_mode: "service:gluetun"
 
   # tdarr:
   #   container_name: tdarr

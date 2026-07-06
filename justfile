@@ -21,6 +21,10 @@ reset-ssh-hosts:
 test ip tags="":
     {{ _ansible }} --limit proxmox -e "ansible_host={{ ip }}" {{ if tags != "" { "--tags " + tags } else { "" } }}
 
+# Deploy DNS/Cloudflare terraform (infra/dns)
+deploy-tf:
+    infra/dns/deploy
+
 # Deploy with a specific tag
 # Usage: just deploy [tag] [args]
 #   just deploy                            - list available tags

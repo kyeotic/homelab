@@ -68,7 +68,7 @@ resource "cloudflare_zero_trust_access_application" "mealie" {
   name             = "Mealie"
   domain           = local.mealie_full_domain
   type             = "self_hosted"
-  session_duration = "24h"
+  session_duration = "730h" # max Cloudflare allows (~30 days)
 }
 
 resource "cloudflare_zero_trust_access_policy" "mealie_allow" {

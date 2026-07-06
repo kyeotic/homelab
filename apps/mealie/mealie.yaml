@@ -33,6 +33,8 @@ services:
       OIDC_PROVIDER_NAME: "Auth0"
       OIDC_USER_CLAIM: "email"
       OIDC_REMEMBER_ME: "true"
+      OIDC_AUTO_REDIRECT: "true"
+      TOKEN_TIME: 8760
 
   tunnel:
     image: cloudflare/cloudflared:latest
