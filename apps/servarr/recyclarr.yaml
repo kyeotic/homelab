@@ -149,6 +149,17 @@ sonarr:
           - name: 4K
             score: *audio_penalty
 
+      # Upscaled — releases advertising (AI) upscaling; effectively never grab
+      - trash_ids:
+          - 23297a736ca77c0fc8e70f8edd7ee56c # Upscaled
+        assign_scores_to:
+          - name: 1080p Only
+            score: &upscaled_penalty -10000
+          - name: 1080p/4K
+            score: *upscaled_penalty
+          - name: 4K
+            score: *upscaled_penalty
+
       # Common Formats — guide-default scores (tiers, streaming, hybrid, unwanted)
       - trash_ids:
           - 3a4127d8aa781b44120d907f2cd62627 # Hybrid
@@ -293,6 +304,17 @@ radarr:
             score: *audio_penalty
           - name: 4K
             score: *audio_penalty
+
+      # Upscaled — releases advertising (AI) upscaling; effectively never grab
+      - trash_ids:
+        - bfd8eb01832d646a0a89c4deb46f8564 # Upscaled
+        assign_scores_to:
+          - name: 1080p Only
+            score: *upscaled_penalty
+          - name: 1080p/4K
+            score: *upscaled_penalty
+          - name: 4K
+            score: *upscaled_penalty
 
 
       # 4K Only

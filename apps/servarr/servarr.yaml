@@ -594,6 +594,9 @@ services:
   recyclarr:
     image: ghcr.io/recyclarr/recyclarr
     container_name: recyclarr
+    # No restart policy = default "no": one crash/reboot leaves it Exited, and
+    # the docker-cleanup prune timer deletes stopped containers after 24h.
+    restart: unless-stopped
     user: ${PUID:?err}:${PGID:?err}
     networks:
       - media-network
@@ -663,22 +666,6 @@ services:
   #   #   - 6500:6500
   #   restart: unless-stopped
   #   network_mode: "service:gluetun"
-
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
-    security_opt:
-      - seccomp:unconfined #optional
-    environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - TZ=${TIMEZONE:?err}
-      - FIREFOX_CLI=https://www.linuxserver.io/ #optional
-    volumes:
-      - ${FOLDER_FOR_CONFIGS:?err}/firefox:/config
-    shm_size: "1gb"
-    restart: no
-    network_mode: "service:gluetun"
 
   # tdarr:
   #   container_name: tdarr

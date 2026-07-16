@@ -3,7 +3,7 @@
 
 docker_lxc_vmid: 103
 docker_lxc_hostname: docker
-docker_lxc_cores: 6
+docker_lxc_cores: 10
 docker_lxc_memory: 20480
 docker_lxc_swap: 2048
 docker_lxc_disk: 150

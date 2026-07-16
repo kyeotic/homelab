@@ -41,3 +41,7 @@ compose_file = "apps/dozzle.yaml"
 
 [stacks.astroneer]
 compose_file = "apps/games/astroneer.yaml"
+
+[stacks.enshrouded]
+compose_file = "apps/games/enshrouded/enshrouded.yaml"
+env_file = "apps/games/enshrouded/.env"

@@ -25,3 +25,7 @@ path = "apps/games/core-keeper/.env"
 [secrets.stack-sync]
 id = "926503a1-3507-411b-a0bc-b3e60127ffed"
 path = "{{ env.HOME }}/.stack-sync.toml"
+
+[secrets.enshrouded]
+id = "c2dde601-827a-41e0-9e80-b48301502ee7"
+path = "apps/games/enshrouded/.env"

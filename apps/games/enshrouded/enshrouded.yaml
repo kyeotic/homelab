@@ -1,0 +1,32 @@
+services:
+  enshrouded:
+    image: sknnr/enshrouded-dedicated-server:v2.0.4
+    restart: unless-stopped
+    network_mode: "host"
+    ports:
+      - 15636:15636/udp
+      - 15637:15637/udp
+    volumes:
+      - /mnt/nas/game-saves/enshrouded/savegame:/home/steam/enshrouded/savegame
+      # externally-managed server config (EXTERNAL_CONFIG=1)
+      - /mnt/nas/game-saves/enshrouded/config/enshrouded_server.json:/home/steam/enshrouded/enshrouded_server.json
+      # persist SteamCMD + Proton prefix between container recreations
+      - enshrouded-steamcmd:/home/steam/steamcmd
+      - enshrouded-steam:/home/steam/Steam
+    environment:
+      # - PUID=1000
+      # - PGID=10000
+      # - PASSWORD=${PASSWORD:?err}
+      # server settings below are ignored while EXTERNAL_CONFIG=1;
+      # edit enshrouded_server.json directly instead
+      - SERVER_NAME=${SERVER_NAME:?err}
+      - SERVER_PASSWORD=${SERVER_PASSWORD:?err}
+      - GAME_PORT=${GAME_PORT:?err}
+      - QUERY_PORT=${QUERY_PORT:?err}
+      - SERVER_SLOTS=${SERVER_SLOTS:?err}
+      - SERVER_IP=${SERVER_IP:?err}
+      - EXTERNAL_CONFIG=1
+
+volumes:
+  enshrouded-steamcmd:
+  enshrouded-steam:
