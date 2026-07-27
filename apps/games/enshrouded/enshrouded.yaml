@@ -1,8 +1,19 @@
 services:
   enshrouded:
     image: sknnr/enshrouded-dedicated-server:v2.0.4
+    container_name: enshrouded
     restart: unless-stopped
     network_mode: "host"
+    # the server's main sim loop is effectively single-threaded (Proton/Wine,
+    # not a Linux binary); pin it to its own core so the ~35 other containers
+    # on this host don't contend with it for scheduling time
+    cpuset: "9"
+    labels:
+      # restart nightly at 4am: the server accumulates memory as terrain is
+      # explored and degrades over long uptimes, see community discussion:
+      # https://steamcommunity.com/app/1203620/discussions/0/4206993388793020551/
+      ofelia.enabled: "true"
+      ofelia.job-restart.nightly.schedule: "0 0 4 * * *"
     ports:
       - 15636:15636/udp
       - 15637:15637/udp
@@ -26,6 +37,18 @@ services:
       - SERVER_SLOTS=${SERVER_SLOTS:?err}
       - SERVER_IP=${SERVER_IP:?err}
       - EXTERNAL_CONFIG=1
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    container_name: enshrouded-ofelia
+    restart: unless-stopped
+    depends_on:
+      - enshrouded
+    command: daemon --docker
+    environment:
+      - TZ=America/Los_Angeles
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
   enshrouded-steamcmd:
