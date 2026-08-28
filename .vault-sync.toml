@@ -29,3 +29,11 @@ path = "{{ env.HOME }}/.stack-sync.toml"
 [secrets.enshrouded]
 id = "c2dde601-827a-41e0-9e80-b48301502ee7"
 path = "apps/games/enshrouded/.env"
+
+[secrets.beszel]
+id = "750d306a-0c6b-4c3c-b250-b4b40024defd"
+path = "apps/beszel/.env"
+
+[secrets.home-assistant]
+id = "785ea003-3121-4ada-8eff-b4b4002564e9"
+path = "apps/home-assistant/.env"

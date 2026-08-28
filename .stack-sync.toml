@@ -7,7 +7,8 @@ compose_file = "apps/servarr/servarr.yaml"
 env_file = "apps/servarr/.env"
 
 [stacks.home-assistant]
-compose_file = "apps/home-assistant.yaml"
+compose_file = "apps/home-assistant/home-assistant.yaml"
+env_file = "apps/home-assistant/.env"
 
 [stacks.scrypted]
 compose_file = "apps/scrypted/scrypted.yaml"

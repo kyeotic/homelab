@@ -11,6 +11,20 @@ services:
     network_mode: host
     ports:
       - 8123:8123
+  code-server:
+    container_name: homeassistant-code-server
+    image: lscr.io/linuxserver/code-server:latest
+    restart: unless-stopped
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=America/Los_Angeles
+      - PASSWORD=${CODE_SERVER_PASSWORD:?err}
+      - DEFAULT_WORKSPACE=/config
+    volumes:
+      - /mnt/app_config/homeassistant:/config
+    ports:
+      - 12321:8443
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     container_name: matter-server

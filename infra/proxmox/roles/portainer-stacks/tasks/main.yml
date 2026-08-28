@@ -1,9 +1,9 @@
 ---
 # Deploy Docker Compose stacks to Portainer using stack-sync
-# Requires: stack-sync installed locally, PORTAINER_API_KEY in environment
+# Requires: stack-sync installed locally, configured via ~/.stack-sync.toml (portainer or ssh mode)
 
 - name: check if stack-sync is installed locally
-  ansible.builtin.command: stack-sync --version
+  ansible.builtin.command: stack-sync version
   delegate_to: localhost
   become: false
   register: stack_sync_check
@@ -14,11 +14,6 @@
   ansible.builtin.fail:
     msg: "stack-sync is not installed locally. Install from: https://github.com/kyeotic/stack-sync"
   when: stack_sync_check.rc != 0
-
-- name: check PORTAINER_API_KEY is set
-  ansible.builtin.fail:
-    msg: "PORTAINER_API_KEY environment variable must be set"
-  when: lookup('env', 'PORTAINER_API_KEY') | length == 0
 
 - name: sync stacks to Portainer
   ansible.builtin.command:
