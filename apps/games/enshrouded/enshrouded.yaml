@@ -4,25 +4,21 @@ services:
     container_name: enshrouded
     restart: unless-stopped
     network_mode: "host"
-    # cpuset caps ALL threads in the container to these cores, not just the
-    # hot sim thread - Proton/Wine translation, asset streaming, and GC also
-    # run auxiliary threads, so a single core (cpuset: "9") starved them and
-    # made performance worse. Reserve a small range instead of one core so
-    # the ~35 other containers on this host still can't crowd it out, but
-    # auxiliary threads have room.
-    # note: this host only has cores 0-6,9-11 online (7-8 are offline), so
-    # the range must stay within that set.
-    cpuset: "9-11"
     labels:
       # restart nightly at 4am: the server accumulates memory as terrain is
       # explored and degrades over long uptimes, see community discussion:
       # https://steamcommunity.com/app/1203620/discussions/0/4206993388793020551/
       ofelia.enabled: "true"
-      ofelia.job-restart.nightly.schedule: "0 0 4 * * *"
+      ofelia.job-run.nightly.schedule: "0 0 4 * * *"
+      ofelia.job-run.nightly.image: "docker:cli"
+      ofelia.job-run.nightly.command: "docker restart enshrouded"
+      ofelia.job-run.nightly.volume: "/var/run/docker.sock:/var/run/docker.sock"
     ports:
       - 15636:15636/udp
       - 15637:15637/udp
     volumes:
+      # persist the installed game itself between container recreations
+      - enshrouded-data:/home/steam/enshrouded
       - /mnt/nas/game-saves/enshrouded/savegame:/home/steam/enshrouded/savegame
       # externally-managed server config (EXTERNAL_CONFIG=1)
       - /mnt/nas/game-saves/enshrouded/config/enshrouded_server.json:/home/steam/enshrouded/enshrouded_server.json
@@ -56,5 +52,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
+  enshrouded-data:
   enshrouded-steamcmd:
   enshrouded-steam:
