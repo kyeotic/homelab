@@ -4,7 +4,7 @@ This document details the network design for the homelab.
 ## Networks
 
 | Name    | CIDR               | DHCP Start | Description            |
-| ------- | ------------------ | ---------- | ---------------------- |
+|---------|--------------------|------------|------------------------|
 | Default | **192.168.0.0/22** | 30         | Default                |
 | IOT     | **192.168.2.0/24** | 20         | Internet-of-things LAN |
 
@@ -12,7 +12,7 @@ This document details the network design for the homelab.
 ## Static Leases (Reserved IPs)
 
 | Name         | IP              | Description                                  |
-| ------------ | --------------- | -------------------------------------------- |
+|--------------|-----------------|----------------------------------------------|
 | Gateway      | 192.168.0.1     | Primary Gateway                              |
 | Printer      | 192.168.0.9     | Brother Printer                              |
 | Proxmox      | 192.168.0.10    | Promox Server                                |
@@ -29,6 +29,14 @@ This document details the network design for the homelab.
 | Kye-1        | 192.168.0.100   | Tims Main PC                                 |
 | KyeNAS       | 192.168.0.200   | Old Synology NAS, deprecated                 |
 
+
+
+### IoT Leases (Reserved IPs)
+
+| Name      | IP    | Description                 |
+|-----------|-------|-----------------------------|
+| Nanoleaf  | 0.214 | Nanoleaf Elements (Redwood) |
+| Athom LED | 0.80  | Office LED Controller       |
 
 ## Utilities
 
