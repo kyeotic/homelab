@@ -35,3 +35,34 @@ services:
       - /run/dbus:/run/dbus:ro
     security_opt:
       - apparmor=unconfined
+
+  # Local voice pipeline (Wyoming protocol). Wake word runs on the Voice PE
+  # itself (microWakeWord), so only speech-to-text and text-to-speech run here.
+  # Add each in HA: Settings > Devices & Services > Add > Wyoming Protocol,
+  # host 192.168.0.20, ports 10300 (whisper) and 10200 (piper).
+  whisper:
+    container_name: wyoming-whisper
+    image: rhasspy/wyoming-whisper:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt/app_config/wyoming-whisper:/data
+    environment:
+      WYO_WHISPER_MODEL: medium-int8
+      WYO_WHISPER_LANGUAGE: en
+      WYO_WHISPER_BEAM_SIZE: 5
+      # Feeds exposed entity/area names to whisper as a prompt so it stops
+      # mishearing device names. Needs a long-lived access token from HA.
+      WYO_WHISPER_HASS_API: http://192.168.0.20:8123/api
+      WYO_WHISPER_HASS_TOKEN: ${WHISPER_HASS_TOKEN:-}
+    ports:
+      - 10300:10300
+  piper:
+    container_name: wyoming-piper
+    image: rhasspy/wyoming-piper:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt/app_config/wyoming-piper:/data
+    environment:
+      WYOMING_PIPER_ARGS: --voice en_US-lessac-medium
+    ports:
+      - 10200:10200
