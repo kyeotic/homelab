@@ -2,6 +2,37 @@
 	email "tim@kye.dev"
 }
 
+# Forward-auth gate. Add `import tinyauth` to a handle block to require a
+# Pocket ID login for it. Never import it in the @auth or @tinyauth handles.
+(tinyauth) {
+	forward_auth 192.168.0.20:3200 {
+		uri /api/auth/caddy
+		copy_headers Remote-User Remote-Name Remote-Email Remote-Groups
+	}
+}
+
+# Gated *arr app. Usage: import gated-arr <subdomain> <upstream>
+# API-key clients (Jellyseerr, mobile apps, calendar feeds) and health checks
+# skip the gate; the app still enforces its API key on those paths. The app runs
+# with External auth, but still serves a dead form at /login that stale
+# bookmarks land on, so that path is sent to the app root.
+(gated-arr) {
+	@{args[0]}-api {
+		host {args[0]}.local.kye.dev
+		path /api/* /feed/* /ping
+	}
+	handle @{args[0]}-api {
+		reverse_proxy {args[1]}
+	}
+
+	@{args[0]} host {args[0]}.local.kye.dev
+	handle @{args[0]} {
+		redir /login / 302
+		import tinyauth
+		reverse_proxy {args[1]}
+	}
+}
+
 homelab.kye.dev {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
@@ -16,6 +47,16 @@ homelab.kye.dev {
 *.local.kye.dev {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
+	}
+
+	@auth host auth.local.kye.dev
+	handle @auth {
+		reverse_proxy 192.168.0.20:1411
+	}
+
+	@tinyauth host tinyauth.local.kye.dev
+	handle @tinyauth {
+		reverse_proxy 192.168.0.20:3200
 	}
 
 	@adguard host adguard.local.kye.dev
@@ -58,15 +99,9 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.20:5055
 	}
 	
-	@movies host movies.local.kye.dev
-	handle @movies {
-		reverse_proxy 192.168.0.20:7878
-	}
+	import gated-arr movies 192.168.0.20:7878
 	
-	@music host music.local.kye.dev
-	handle @music {
-		reverse_proxy 192.168.0.20:8686
-	}
+	import gated-arr music 192.168.0.20:8686
 	
 	@portainer host portainer.local.kye.dev
 	handle @portainer {
@@ -77,23 +112,32 @@ homelab.kye.dev {
 		}
 	}
 	
-	@prowl host prowl.local.kye.dev
-	handle @prowl {
-		reverse_proxy 192.168.0.20:9696
-	}
+	import gated-arr prowl 192.168.0.20:9696
 	
 	@qbit host qbit.local.kye.dev
 	handle @qbit {
 		reverse_proxy 192.168.0.20:8200
 	}
 	
+	# Bazarr enforces its API key on /api/*. Its HTML embeds that key, so no
+	# other path may skip the gate.
+	@subs-api {
+		host subs.local.kye.dev
+		path /api/*
+	}
+	handle @subs-api {
+		reverse_proxy 192.168.0.20:6767
+	}
+
 	@subs host subs.local.kye.dev
 	handle @subs {
+		import tinyauth
 		reverse_proxy 192.168.0.20:6767
 	}
 	
 	@syncthing host syncthing.local.kye.dev
 	handle @syncthing {
+		import tinyauth
 		reverse_proxy 192.168.0.20:8384
 	}
 	
@@ -102,20 +146,14 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.20:9091
 	}
 	
-	@tv host tv.local.kye.dev
-	handle @tv {
-		reverse_proxy 192.168.0.20:8989
-	}
+	import gated-arr tv 192.168.0.20:8989
 	
 	@debrid host debrid.local.kye.dev
 	handle @debrid {
 		reverse_proxy 192.168.0.20:6500
 	}
 	
-	@reader host reader.local.kye.dev
-	handle @reader {
-		reverse_proxy 192.168.0.20:8787
-	}
+	import gated-arr reader 192.168.0.20:8787
 	
 	@calibre host calibre.local.kye.dev
 	handle @calibre {
@@ -129,6 +167,7 @@ homelab.kye.dev {
 
 	@listenarr host listenarr.local.kye.dev
 	handle @listenarr {
+		import tinyauth
 		reverse_proxy 192.168.0.20:4545
 	}
 	
@@ -143,6 +182,7 @@ homelab.kye.dev {
 	
 	@kuma host kuma.local.kye.dev
 	handle @kuma {
+		import tinyauth
 		reverse_proxy 192.168.0.20:5566
 	}
 
@@ -158,11 +198,13 @@ homelab.kye.dev {
 
 	@dockru host dockru.local.kye.dev
 	handle @dockru {
+		import tinyauth
 		reverse_proxy 192.168.0.20:5051
 	}
 
 	@dozzle host dozzle.local.kye.dev
 	handle @dozzle {
+		import tinyauth
 		reverse_proxy 192.168.0.20:8084
 	}
 
@@ -173,6 +215,7 @@ homelab.kye.dev {
 
 	@code host code.local.kye.dev
 	handle @code {
+		import tinyauth
 		reverse_proxy 192.168.0.20:12321
 	}
 }

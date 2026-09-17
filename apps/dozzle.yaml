@@ -4,6 +4,12 @@ services:
     image: amir20/dozzle:latest
     container_name: dozzle
     restart: unless-stopped
+    environment:
+      # Identity comes from TinyAuth via Caddy's forward_auth (Remote-User,
+      # Remote-Email, Remote-Name). Must stay paired with `import tinyauth`
+      # on the dozzle handle in infra/caddy/Caddyfile.
+      DOZZLE_AUTH_PROVIDER: forward-proxy
+      DOZZLE_AUTH_LOGOUT_URL: https://tinyauth.local.kye.dev/logout
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:

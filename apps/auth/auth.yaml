@@ -1,0 +1,52 @@
+services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v2
+    container_name: pocket-id
+    restart: unless-stopped
+    ports:
+      - "1411:1411"
+    volumes:
+      - ${FOLDER_FOR_CONFIGS:?err}/pocket-id:/app/data
+    environment:
+      APP_URL: https://auth.local.kye.dev
+      # Caddy LXC. Only trust X-Forwarded-* from the reverse proxy.
+      TRUST_PROXY: "192.168.0.13"
+      ENCRYPTION_KEY: ${POCKET_ID_ENCRYPTION_KEY:?err}
+      PUID: ${PUID:?err}
+      PGID: ${PGID:?err}
+      TZ: ${TIMEZONE:?err}
+      ANALYTICS_DISABLED: "true"
+    healthcheck:
+      test: ["CMD", "/app/pocket-id", "healthcheck"]
+      interval: 90s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+
+  tinyauth:
+    image: ghcr.io/tinyauthapp/tinyauth:v5
+    container_name: tinyauth
+    restart: unless-stopped
+    ports:
+      # 3000 on the host is taken by the home dashboard
+      - "3200:3000"
+    volumes:
+      # v5 keeps sessions in SQLite. Losing this only logs everyone out.
+      - ${FOLDER_FOR_CONFIGS:?err}/tinyauth:/data
+    environment:
+      TINYAUTH_APPURL: https://tinyauth.local.kye.dev
+      TINYAUTH_DATABASE_PATH: /data/tinyauth.db
+      TINYAUTH_AUTH_SECURECOOKIE: "true"
+      # Caddy LXC, so client IPs come from X-Forwarded-For
+      TINYAUTH_AUTH_TRUSTEDPROXIES: "192.168.0.13"
+      # Pocket ID is the only login method. No TINYAUTH_AUTH_USERS, ever.
+      # Callback registered in Pocket ID: https://tinyauth.local.kye.dev/api/oauth/callback/pocketid
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_CLIENTID: ${TINYAUTH_OIDC_CLIENT_ID:?err}
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_CLIENTSECRET: ${TINYAUTH_OIDC_CLIENT_SECRET:?err}
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL: https://auth.local.kye.dev/authorize
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: https://auth.local.kye.dev/api/oidc/token
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: https://auth.local.kye.dev/api/oidc/userinfo
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: openid email profile groups
+      TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: Pocket ID
+      # Skip TinyAuth's own login page and go straight to Pocket ID
+      TINYAUTH_OAUTH_AUTOREDIRECT: pocketid

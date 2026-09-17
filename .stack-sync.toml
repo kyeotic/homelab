@@ -46,3 +46,7 @@ compose_file = "apps/games/astroneer.yaml"
 [stacks.enshrouded]
 compose_file = "apps/games/enshrouded/enshrouded.yaml"
 env_file = "apps/games/enshrouded/.env"
+
+[stacks.auth]
+compose_file = "apps/auth/auth.yaml"
+env_file = "apps/auth/.env"
