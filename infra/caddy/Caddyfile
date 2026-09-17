@@ -170,4 +170,9 @@ homelab.kye.dev {
 	handle @litr {
 		reverse_proxy 192.168.0.20:3077
 	}
+
+	@code host code.local.kye.dev
+	handle @code {
+		reverse_proxy 192.168.0.20:12321
+	}
 }
