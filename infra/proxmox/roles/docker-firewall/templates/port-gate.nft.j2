@@ -1,0 +1,41 @@
+#!/usr/sbin/nft -f
+# Managed by Ansible (docker-firewall role). Do not edit on the host.
+#
+# Lets only Caddy reach the ports of apps whose login is TinyAuth. Lives in its
+# own table so it never touches Docker's tables and survives Docker restarts.
+
+# Declare then delete, so reloading replaces the table atomically.
+table inet port_gate {}
+delete table inet port_gate
+
+table inet port_gate {
+	set gated_ports {
+		type inet_service
+		elements = {
+{% for item in docker_firewall_gated_ports %}
+			{{ item.port }} comment "{{ item.name }}",
+{% endfor %}
+		}
+	}
+
+	set allowed_v4 {
+		type ipv4_addr
+		elements = { {{ docker_firewall_allowed_sources | join(', ') }} }
+	}
+
+	# IPv4 to a published port is DNATed and forwarded to the container, so
+	# match the port the client dialed rather than the container port.
+	chain forward {
+		type filter hook forward priority filter - 1; policy accept;
+		iifname "{{ docker_firewall_lan_interface }}" meta l4proto tcp ct direction original ct original proto-dst @gated_ports ip saddr != @allowed_v4 reject with tcp reset
+		iifname "{{ docker_firewall_lan_interface }}" meta l4proto tcp ct direction original ct original proto-dst @gated_ports meta nfproto ipv6 reject with tcp reset
+	}
+
+	# IPv6 goes through Docker's userland proxy on the host, as does any
+	# host-network app, so those connections end here instead.
+	chain input {
+		type filter hook input priority filter - 1; policy accept;
+		iifname "{{ docker_firewall_lan_interface }}" tcp dport @gated_ports ip saddr != @allowed_v4 reject with tcp reset
+		iifname "{{ docker_firewall_lan_interface }}" tcp dport @gated_ports meta nfproto ipv6 reject with tcp reset
+	}
+}

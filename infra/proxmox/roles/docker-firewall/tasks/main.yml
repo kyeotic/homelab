@@ -1,0 +1,34 @@
+---
+# nftables rules that keep TinyAuth-gated app ports reachable only through Caddy
+
+- name: ensure nftables include directory exists
+  ansible.builtin.file:
+    path: /etc/nftables.d
+    state: directory
+    mode: '0755'
+
+- name: write gated port rules
+  ansible.builtin.template:
+    src: port-gate.nft.j2
+    dest: /etc/nftables.d/port-gate.nft
+    mode: '0644'
+    owner: root
+    group: root
+    validate: nft -c -f %s
+  notify: reload port-gate
+
+- name: copy port-gate service
+  ansible.builtin.copy:
+    src: port-gate.service
+    dest: /etc/systemd/system/port-gate.service
+    mode: '0644'
+    owner: root
+    group: root
+  notify: reload port-gate
+
+- name: enable and start port-gate service
+  ansible.builtin.systemd:
+    name: port-gate.service
+    enabled: yes
+    state: started
+    daemon_reload: yes

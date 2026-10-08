@@ -29,6 +29,7 @@
   gather_facts: false
   roles:
     - { role: docker-host, tags: [setup-docker] }
+    - { role: docker-firewall, tags: [setup-docker, sync-firewall] }
     - { role: registry-config, tags: [setup-docker, sync-registry] }
     - { role: docker-stacks, tags: [setup-docker, docker-stacks] }
     - { role: docker-cleanup, tags: [setup-docker] }

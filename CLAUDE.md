@@ -41,7 +41,7 @@ infra/proxmox/
 
 All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
 
-**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-samba`, `docker-stacks`, `fix-perms`
+**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-samba`, `sync-firewall`, `docker-stacks`, `fix-perms`
 
 ### Roles
 
@@ -57,6 +57,7 @@ All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
 | container-ssh    | SSH key distribution                     |
 | caddy            | Caddy reverse proxy setup                |
 | docker-host      | Docker install, Arcane data/projects dirs |
+| docker-firewall  | nftables rules so only Caddy reaches TinyAuth-gated app ports |
 | docker-stacks    | Deploy stacks with stack-sync            |
 | docker-cleanup   | Docker cleanup systemd timer             |
 
@@ -75,6 +76,7 @@ To add a new stack:
        reverse_proxy 192.168.0.20:<host-port>
    }
    ```
+5. If the route uses `import tinyauth` and the app's own login is turned off, add its host port to `docker_firewall_gated_ports` in `infra/proxmox/roles/docker-firewall/defaults/main.yml` and run `just deploy sync-firewall`. Otherwise the app is open with no login on `192.168.0.20:<host-port>`. See `sso.md`.
 
 ### Other Directories
 

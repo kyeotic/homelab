@@ -1,0 +1,15 @@
+[Unit]
+Description=Block LAN access to TinyAuth-gated app ports except from Caddy
+# nftables.service flushes the whole ruleset when it starts
+After=nftables.service
+Before=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/nftables.d/port-gate.nft
+ExecReload=/usr/sbin/nft -f /etc/nftables.d/port-gate.nft
+ExecStop=/usr/sbin/nft delete table inet port_gate
+
+[Install]
+WantedBy=multi-user.target

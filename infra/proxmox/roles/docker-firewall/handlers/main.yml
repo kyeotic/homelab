@@ -1,0 +1,7 @@
+---
+# Reload re-applies the rules atomically, with no window where ports are open
+- name: reload port-gate
+  ansible.builtin.systemd:
+    name: port-gate.service
+    state: reloaded
+    daemon_reload: yes

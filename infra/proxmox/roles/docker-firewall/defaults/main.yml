@@ -1,0 +1,22 @@
+---
+# Ports of apps that rely on TinyAuth for login (Caddy `import tinyauth` or
+# `import gated-arr`) and have their own login turned off. On the LAN interface
+# only Caddy may reach them; anyone else would get the app with no login.
+# Containers reaching these ports over Docker networks are not affected.
+# Host-network apps can be listed too. Use the published host port.
+docker_firewall_gated_ports:
+  - { name: sonarr, port: 8989 }
+  - { name: radarr, port: 7878 }
+  - { name: lidarr, port: 8686 }
+  - { name: prowlarr, port: 9696 }
+  - { name: readarr, port: 8787 }
+  - { name: bazarr, port: 6767 }
+  - { name: listenarr, port: 4545 }
+  - { name: dozzle, port: 8084 }
+
+# Interface LAN traffic arrives on
+docker_firewall_lan_interface: eth0
+
+# IPv4 sources allowed to reach the gated ports (Caddy LXC)
+docker_firewall_allowed_sources:
+  - 192.168.0.13
