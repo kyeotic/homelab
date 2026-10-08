@@ -202,6 +202,12 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.20:5051
 	}
 
+	@arcane host arcane.local.kye.dev
+	handle @arcane {
+		import tinyauth
+		reverse_proxy 192.168.0.20:3552
+	}
+
 	@dozzle host dozzle.local.kye.dev
 	handle @dozzle {
 		import tinyauth

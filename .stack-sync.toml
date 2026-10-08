@@ -37,6 +37,10 @@ env_file = "apps/beszel/.env"
 [stacks.dockru]
 compose_file = "apps/dockru.yaml"
 
+[stacks.arcane]
+compose_file = "apps/arcane/arcane.yaml"
+env_file = "apps/arcane/.env"
+
 [stacks.dozzle]
 compose_file = "apps/dozzle.yaml"
 

@@ -1,0 +1,53 @@
+name: arcane
+services:
+  arcane:
+    image: ghcr.io/getarcaneapp/manager:v2
+    container_name: arcane
+    restart: unless-stopped
+    ports:
+      - 3552:3552
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/app_config/arcane/data:/app/data
+      # Projects directory. Same path inside and outside the container so compose
+      # files resolve host paths correctly.
+      - /mnt/app_config/arcane/projects:/mnt/app_config/arcane/projects
+    environment:
+      APP_URL: https://arcane.local.kye.dev
+      PROJECTS_DIRECTORY: /mnt/app_config/arcane/projects
+      # Caddy LXC. Only trust X-Forwarded-* from the reverse proxy.
+      TRUSTED_PROXIES: 192.168.0.13/32
+      ENCRYPTION_KEY: ${ARCANE_ENCRYPTION_KEY:?err}
+      # Run as root rather than Arcane's default UID 65532. The projects dir sits
+      # outside /app/data, so Arcane won't chown it, and stack-sync writes its
+      # files as root. The docker socket already makes this root-equivalent.
+      PUID: "0"
+      PGID: "0"
+      TZ: ${TIMEZONE:?err}
+      ANALYTICS_DISABLED: "true"
+      # Login through Pocket ID. TinyAuth already gates the route, so this is a
+      # silent redirect once you have a Pocket ID session.
+      # Callback registered in Pocket ID: https://arcane.local.kye.dev/auth/oidc/callback
+      OIDC_ENABLED: "true"
+      OIDC_ISSUER_URL: https://auth.local.kye.dev
+      OIDC_CLIENT_ID: ${ARCANE_OIDC_CLIENT_ID:?err}
+      OIDC_CLIENT_SECRET: ${ARCANE_OIDC_CLIENT_SECRET:?err}
+      OIDC_SCOPES: openid email profile groups
+      OIDC_PROVIDER_NAME: Pocket ID
+      OIDC_AUTO_REDIRECT_TO_PROVIDER: "true"
+      # Link the Pocket ID login to the local admin with the same email, which
+      # keeps that user's admin role.
+      OIDC_MERGE_ACCOUNTS: "true"
+    # Host cgroup namespace lets Arcane detect its own container ID
+    cgroup: host
+    healthcheck:
+      test: ['CMD', './arcane', 'health', '--timeout', '2s']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'

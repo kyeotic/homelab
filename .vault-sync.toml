@@ -41,3 +41,7 @@ path = "apps/home-assistant/.env"
 [secrets.tinyauth]
 id = "c7c2d18e-c679-4a91-b459-b4c80041308b"
 path = "apps/auth/.env"
+
+[secrets.arcane]
+id = "9c3aa08d-7ae6-4b76-9796-b4dd0012b8e0"
+path = "apps/arcane/.env"
