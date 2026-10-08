@@ -20,9 +20,9 @@ compose_file = "apps/syncthing.yaml"
 [stacks.ffmpeg]
 compose_file = "apps/ffmpeg.yaml"
 
-[stacks.core-keeper]
-compose_file = "apps/games/core-keeper/core-keeper.yaml"
-env_file = "apps/games/core-keeper/.env"
+# [stacks.core-keeper]
+# compose_file = "apps/games/core-keeper/core-keeper.yaml"
+# env_file = "apps/games/core-keeper/.env"
 
 [stacks.uptime-kuma]
 compose_file = "apps/uptime-kuma.yaml"
@@ -34,8 +34,8 @@ compose_file = "apps/registry.yaml"
 compose_file = "apps/beszel/beszel.yaml"
 env_file = "apps/beszel/.env"
 
-[stacks.dockru]
-compose_file = "apps/dockru.yaml"
+# [stacks.dockru]
+# compose_file = "apps/dockru.yaml"
 
 [stacks.arcane]
 compose_file = "apps/arcane/arcane.yaml"
@@ -44,12 +44,12 @@ env_file = "apps/arcane/.env"
 [stacks.dozzle]
 compose_file = "apps/dozzle.yaml"
 
-[stacks.astroneer]
-compose_file = "apps/games/astroneer.yaml"
+# [stacks.astroneer]
+# compose_file = "apps/games/astroneer.yaml"
 
-[stacks.enshrouded]
-compose_file = "apps/games/enshrouded/enshrouded.yaml"
-env_file = "apps/games/enshrouded/.env"
+# [stacks.enshrouded]
+# compose_file = "apps/games/enshrouded/enshrouded.yaml"
+# env_file = "apps/games/enshrouded/.env"
 
 [stacks.auth]
 compose_file = "apps/auth/auth.yaml"

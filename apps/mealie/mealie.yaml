@@ -1,3 +1,4 @@
+# arcane watcher test
 services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:v3.10.2

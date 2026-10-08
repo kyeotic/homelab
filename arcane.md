@@ -14,8 +14,9 @@ with manual verification between them.
   the container is recommended (as Dockge/Dockru require) but Arcane can translate paths if
   they differ, or accept `PROJECTS_DIRECTORY=<containerPath>:<hostPath>`.
 - Arcane scans the projects directory, including nested folders, and runs a filesystem
-  watcher. Compose files dropped there by `stack-sync` appear as "unmanaged" projects until
-  adopted in the UI.
+  watcher. A compose project dropped there by `stack-sync` shows up as a regular project
+  (provider "Local") with no adoption step, and Arcane writes no extra files into its
+  directory (checked 2026-10-07).
 - `.env` precedence: Arcane `TZ`/`LANG` < `.env.global` in the projects dir < project `.env`.
   `.env` is editable in the UI through a dedicated editor.
 - Official CLI (`arcane`, module `github.com/getarcaneapp/arcane/cli/v2`). Checked the source
@@ -91,7 +92,7 @@ change any volume paths.
     default local admin (`arcane`/`arcane-admin` at first start, email changed to match).
     The merge needs `email_verified`, so the Pocket ID user must have "Email verified" on.
     Local authentication is now disabled in Arcane's settings.
-- [ ] Phase 2: Move one stack and test the UI
+- [x] Phase 2: Move one stack and test the UI
   - Move one low-risk stack (e.g. `uptime-kuma`): sync it with a temporary stack-sync config
     that lists only that stack and sets `host_dir = "/mnt/app_config/arcane/projects"`
     (`stack-sync sync -C <file>`; a `host_dir` in an explicit `-C` file overrides
@@ -100,11 +101,29 @@ change any volume paths.
   - Until Phase 3, a full sync (including any `just deploy docker-stacks`) writes this stack
     back into Dockru's directory. Sync other stacks by name in between, or remove the old copy
     again afterwards.
-  - Adopt the project in Arcane. Confirm start/stop/restart, container exec terminal, and
-    Pull/Redeploy.
+  - Confirm the project appears in Arcane, then test start/stop/restart, container exec
+    terminal, and Pull/Redeploy. (No adoption needed: it was listed as a Local project on its
+    own.)
   - Enable the image update watcher and confirm the Updates page populates.
   - Check that Arcane did not rewrite or reformat the adopted compose file
     (`ssh root@192.168.0.20 cat /mnt/app_config/arcane/projects/<stack>/compose.yaml`).
+  - 2026-10-07: `uptime-kuma` moved. Notes:
+    - A `-C` file does not merge with `~/.stack-sync.toml`: it needs `mode`, `host`,
+      `ssh_user` and `ssh_key` copied in, not only `host_dir`. Use absolute `compose_file` paths
+      if the file lives outside the repo.
+    - `docker compose up -d` from the new dir did not recreate the container (still one
+      container, no duplicate), so its `com.docker.compose.project.working_dir` label still
+      pointed at the Dockru dir. `docker compose up -d --force-recreate` in the new dir fixed the
+      label. Phase 3 will hit the same thing for every stack; use `stack-sync sync --redeploy`
+      or force-recreate afterwards if Arcane cares about the label.
+    - Arcane listed it straight away as a running Local project and added no files to the
+      project dir. Compose md5 `e38c40a2953f334ece434542127510e0` (same as
+      `apps/uptime-kuma.yaml`); unchanged after start/stop/restart/redeploy in the UI.
+    - Start, stop, restart and redeploy work. Exec terminal was confirmed in Phase 1.
+    - The Updates page already lists image updates for every container on the host, including
+      stacks still under Dockru, so update tracking does not depend on the migration.
+    - `/mnt/app_config/dockru` also holds `discord-bot`, `lit-reader` and `snow-tracker`, which
+      are not in `.stack-sync.toml`. Decide what to do with them before Phase 5 deletes the dir.
 - [ ] Phase 3: Switch stack-sync to Arcane's projects directory
   - Change `host_dir` to `/mnt/app_config/arcane/projects` in the Bitwarden secret behind
     `~/.stack-sync.toml` (vault-sync entry `secrets.stack-sync`), then refresh the local file.
@@ -112,16 +131,38 @@ change any volume paths.
     Every stack is written to the new directory and brought up there. Confirm no duplicate
     containers, then remove the stack directories under `/mnt/app_config/dockru` (leave
     Dockru's own `data` dir until Phase 5).
-  - Change an adopted project's compose locally, run `stack-sync sync <stack>`, and
-    confirm Arcane shows the new compose without a manual refresh and the project stays
-    adopted.
-  - For an adopted stack with a `.env`, open it in Arcane's `.env` editor, redeploy it with
+  - Change a project's compose locally, run `stack-sync sync <stack>`, and confirm Arcane
+    shows the new compose without a manual refresh.
+  - For a stack with a `.env`, open it in Arcane's `.env` editor, redeploy it with
     stack-sync, and confirm Arcane does not regenerate or overwrite the `.env` stack-sync
     wrote (Arcane's GitOps env merge writes `.env` from `.env.git` + `project.env`; make sure
     that does not apply to non-GitOps projects).
-- [ ] Phase 4: Adopt all stacks
-  - Adopt every remaining project in the Arcane UI. Confirm all are running and reachable
-    through Caddy.
+  - 2026-10-07 progress:
+    - `host_dir` changed in Bitwarden and `~/.stack-sync.toml`. Before syncing, every deployed
+      compose/`.env` under the Dockru dir matched the repo.
+    - Running stacks synced by name, then `docker compose up -d --force-recreate` in each new
+      project dir so the compose labels point at the new location (no image pull). The games
+      that were stopped (`astroneer`, `core-keeper`, `enshrouded`) were copied over and given
+      `docker compose up --no-start --force-recreate` so they stayed stopped.
+    - `core-keeper`, `dockru`, `astroneer` and `enshrouded` are commented out in
+      `.stack-sync.toml`. stack-sync never removes a stack dropped from the config, so they
+      were removed by hand (`docker compose down` + project dir). Game saves are on the NAS
+      (`/mnt/nas/game-saves/...`) and were not touched. Dockru is no longer running.
+    - `discord-bot`, `lit-reader` and `snow-tracker` are deployed from other repos, not this
+      one. Copied to the Arcane projects dir and force-recreated there. `~/dev/snow-tracker`'s
+      `.stack-sync.toml` has no `host_dir`, so it picks up the new one from
+      `~/.stack-sync.toml`. No stack-sync config for `discord-bot` or `lit-reader` was found
+      under `~/dev`; check how they deploy before they next ship.
+    - Old stack dirs under `/mnt/app_config/dockru` removed; only `data` and `dockru/data`
+      (Dockru's own data) remain, for Phase 5.
+    - `.env` check: `home-assistant`'s `.env` shows correctly in Arcane's editor, and a
+      stack-sync resync left `.env` and `compose.yaml` byte-identical to the repo with no
+      `.env.git`/`project.env` files added.
+    - Still to do: the watcher check (compose change via stack-sync shows in Arcane without a
+      refresh).
+- [ ] Phase 4: Verify all stacks
+  - Confirm every project appears in Arcane, is running, and is reachable through Caddy
+    (no adoption step; see Phase 2).
   - Auth is decided (TinyAuth + OIDC via Pocket ID, done in Phase 1).
 - [ ] Phase 5: Remove Dockru
   - Remove `apps/dockru.yaml` and its `.stack-sync.toml` entry, the Caddy `@dockru` block,
@@ -138,7 +179,7 @@ change any volume paths.
 ## Open questions to verify early
 
 1. Does Arcane's watcher re-read a project whose `compose.yaml` and `.env` are overwritten
-   by `stack-sync` over SSH, and does it keep the project adopted? Checked in Phase 3.
+   by `stack-sync` over SSH? Checked in Phase 3.
 2. Does Arcane work behind Caddy with TinyAuth forward auth, or does its WebSocket/gRPC
    traffic need a bypass (there is a closed issue about gRPC behind reverse proxies, #3413)?
    Yes (checked 2026-10-07): the UI, OIDC login, and the container exec terminal
