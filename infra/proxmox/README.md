@@ -10,8 +10,7 @@ This directory contains Ansible playbooks to automate configuration of your home
   - Caddy container (configured as `caddy-container` at `192.168.0.13` in `inventory.yaml`)
 - Root access on both hosts
 - The restic password encrypted in `group_vars/proxmox/vault.yml`
-- [stack-sync](https://github.com/kyeotic/stack-sync) for deploying Docker stacks to Portainer
-- `PORTAINER_API_KEY` environment variable set for stack deployment
+- [stack-sync](https://github.com/kyeotic/stack-sync) for deploying Docker stacks (SSH mode, configured in `~/.stack-sync.toml`)
 
 ## Setup
 

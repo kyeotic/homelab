@@ -1,0 +1,10 @@
+---
+# Docker host configuration
+
+# Docker settings
+docker_log_driver: journald
+
+# Arcane (deployed as a stack by docker-stacks, see apps/arcane/arcane.yaml).
+# These paths must match the compose file and host_dir in ~/.stack-sync.toml.
+arcane_data_path: /mnt/app_config/arcane/data
+arcane_projects_path: /mnt/app_config/arcane/projects

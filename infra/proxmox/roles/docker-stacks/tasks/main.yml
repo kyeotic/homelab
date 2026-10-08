@@ -1,0 +1,47 @@
+---
+# Deploy Docker Compose stacks to Arcane's projects directory using stack-sync.
+# Arcane is one of the stacks, so this also installs or updates Arcane.
+# Requires: stack-sync installed locally, configured via ~/.stack-sync.toml (ssh mode,
+# host_dir = Arcane's projects directory)
+
+- name: check if stack-sync is installed locally
+  ansible.builtin.command: stack-sync version
+  delegate_to: localhost
+  become: false
+  register: stack_sync_check
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: fail if stack-sync is not installed
+  ansible.builtin.fail:
+    msg: "stack-sync is not installed locally. Install from: https://github.com/kyeotic/stack-sync"
+  when: stack_sync_check.rc != 0
+
+# Command tasks are skipped in check mode, so run stack-sync's own dry run instead
+- name: preview stack changes
+  ansible.builtin.command:
+    cmd: stack-sync sync --dry-run -C {{ docker_stacks_config }} {{ docker_stacks_filter }}
+  environment:
+    NO_COLOR: "1"
+  delegate_to: localhost
+  become: false
+  register: stack_sync_preview
+  changed_when: false
+  check_mode: false
+  when: ansible_check_mode
+
+- name: show stack changes
+  ansible.builtin.debug:
+    var: stack_sync_preview.stdout_lines
+  when: ansible_check_mode
+
+- name: sync stacks
+  ansible.builtin.command:
+    cmd: stack-sync sync -C {{ docker_stacks_config }} {{ docker_stacks_filter }}
+  environment:
+    NO_COLOR: "1"
+  delegate_to: localhost
+  become: false
+  register: stack_sync_result
+  changed_when: "'Updated' in stack_sync_result.stdout or 'Created' in stack_sync_result.stdout"

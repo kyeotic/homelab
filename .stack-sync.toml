@@ -34,9 +34,6 @@ compose_file = "apps/registry.yaml"
 compose_file = "apps/beszel/beszel.yaml"
 env_file = "apps/beszel/.env"
 
-# [stacks.dockru]
-# compose_file = "apps/dockru.yaml"
-
 [stacks.arcane]
 compose_file = "apps/arcane/arcane.yaml"
 env_file = "apps/arcane/.env"

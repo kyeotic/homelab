@@ -36,12 +36,12 @@ infra/proxmox/
 **Key hosts:**
 - `homelab` (192.168.0.10) - Proxmox host
 - `caddy-container` (192.168.0.13) - Caddy reverse proxy
-- `docker` (192.168.0.20) - Docker/Portainer host
+- `docker-container` (192.168.0.20) - Docker host; stacks managed in Arcane (`arcane.local.kye.dev`)
 - `kye-nas` (192.168.0.11) - Samba LXC (VMID 102)
 
 All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
 
-**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-samba`, `fix-perms`
+**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-samba`, `docker-stacks`, `fix-perms`
 
 ### Roles
 
@@ -56,11 +56,13 @@ All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
 | zed-discord      | ZFS event notifications to Discord       |
 | container-ssh    | SSH key distribution                     |
 | caddy            | Caddy reverse proxy setup                |
+| docker-host      | Docker install, Arcane data/projects dirs |
+| docker-stacks    | Deploy stacks with stack-sync            |
 | docker-cleanup   | Docker cleanup systemd timer             |
 
 ### Docker Stacks (`apps/`)
 
-Docker Compose stacks are deployed to Portainer via [stack-sync](https://github.com/kyeotic/stack-sync). The config is in `.stack-sync.toml`, which maps each stack name to its compose file (and optional `.env` file) under `apps/`.
+Docker Compose stacks are deployed with [stack-sync](https://github.com/kyeotic/stack-sync) over SSH into Arcane's projects directory (`/mnt/app_config/arcane/projects/<stack>/`), where [Arcane](https://getarcane.app) picks them up as projects. The config is in `.stack-sync.toml`, which maps each stack name to its compose file (and optional `.env` file) under `apps/`; connection settings and `host_dir` are in `~/.stack-sync.toml`. Removing a stack from `.stack-sync.toml` does not remove it from the host.
 
 To add a new stack:
 1. Create a Docker Compose file in `apps/` (single file) or `apps/<name>/` (if it needs an `.env`)

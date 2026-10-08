@@ -124,7 +124,7 @@ change any volume paths.
       stacks still under Dockru, so update tracking does not depend on the migration.
     - `/mnt/app_config/dockru` also holds `discord-bot`, `lit-reader` and `snow-tracker`, which
       are not in `.stack-sync.toml`. Decide what to do with them before Phase 5 deletes the dir.
-- [ ] Phase 3: Switch stack-sync to Arcane's projects directory
+- [x] Phase 3: Switch stack-sync to Arcane's projects directory
   - Change `host_dir` to `/mnt/app_config/arcane/projects` in the Bitwarden secret behind
     `~/.stack-sync.toml` (vault-sync entry `secrets.stack-sync`), then refresh the local file.
   - Preview with `stack-sync sync --dry-run`, then run `just deploy docker-stacks`.
@@ -158,23 +158,59 @@ change any volume paths.
     - `.env` check: `home-assistant`'s `.env` shows correctly in Arcane's editor, and a
       stack-sync resync left `.env` and `compose.yaml` byte-identical to the repo with no
       `.env.git`/`project.env` files added.
-    - Still to do: the watcher check (compose change via stack-sync shows in Arcane without a
-      refresh).
-- [ ] Phase 4: Verify all stacks
+    - Watcher check (`mealie`, comment line added then removed): Arcane noticed the change
+      right away, but a project page that was already open showed "unsaved changes" instead of
+      reloading; after a refresh it showed the new compose. Reload the page after a
+      stack-sync deploy before editing in Arcane, or the editor may save the old content back.
+      The project stayed listed normally.
+- [x] Phase 4: Verify all stacks
   - Confirm every project appears in Arcane, is running, and is reachable through Caddy
     (no adoption step; see Phase 2).
   - Auth is decided (TinyAuth + OIDC via Pocket ID, done in Phase 1).
-- [ ] Phase 5: Remove Dockru
+  - 2026-10-07: `docker compose ls` shows 15 projects, all running from
+    `/mnt/app_config/arcane/projects`. Checked every Caddy route to 192.168.0.20 both through
+    Caddy and directly: all answer (200/30x, or 401 from TinyAuth) except `dockru` (removed in
+    Phase 3; route goes in Phase 5) and five routes that were already dead before the
+    migration because nothing serves them: `transmission` (9091), `debrid` (6500, rdtclient),
+    `jellyfin` (8096) and `home` (3000, gluetun "firefox" port) are commented out in
+    `servarr.yaml`, and `portainer` (9443) has no stack.
+- [x] Phase 5: Remove Dockru
   - Remove `apps/dockru.yaml` and its `.stack-sync.toml` entry, the Caddy `@dockru` block,
     and the `dockru.local.kye.dev` route. Stop and remove the container on the host, then
     delete `/mnt/app_config/dockru`.
   - Decide whether Dozzle stays.
-- [ ] Phase 6: Fresh-host provisioning
+  - Done 2026-10-07. Container was already removed in Phase 3. Also removed the dead
+    `@portainer` Caddy route. `/mnt/app_config/dockru` deleted (older copies remain in restic
+    backups). Dozzle kept for now; no decision made.
+  - Left alone: `/mnt/app_config/portainer` (old Portainer data, nothing uses it) and the
+    dead servarr routes listed under Phase 4.
+- [x] Phase 6: Fresh-host provisioning
   - Add an ansible role that installs Arcane on a new docker host as the alternative to
     `docker-portainer` (tag `setup-docker`). Update `README.md`, `CLAUDE.md`, and the
     `portainer-stacks` role naming/docs, which still describe Portainer.
+  - Done 2026-10-07. Portainer is gone, so the roles were replaced rather than kept as
+    alternatives:
+    - `docker-portainer` -> `docker-host`: installs Docker, writes `daemon.json`, and creates
+      Arcane's data and projects dirs. Portainer and its BWS API-key lookup were removed, along
+      with `portainer_bws_secret_id` in `group_vars/all/vars.yml` (the Bitwarden secret
+      itself can be deleted).
+    - `portainer-stacks` -> `docker-stacks`: runs stack-sync. Arcane is a stack in
+      `.stack-sync.toml`, so this is what installs Arcane on a fresh host. Now honours
+      `docker_stacks_filter` (`just deploy docker-stacks <stack...>`) and, under `--check`,
+      shows `stack-sync sync --dry-run` output instead of skipping.
+    - Inventory host `portainer` renamed to `docker-container`.
+    - `daemon.json` is now rendered with `to_json` so it matches the file on the host
+      byte-for-byte; the old multi-line template would have restarted Docker on the next run.
+      The Docker version check runs in check mode too.
+    - `--check --diff` of `setup-docker` against the live host: `docker-host` reports no
+      changes. `registry-config` still wants to change `/mnt/app_config/registry/data` from
+      0775 to 0755 (existing drift, not touched).
+    - Fresh host without a backup: Arcane needs first-run setup and OIDC wiring again (see
+      Phase 1 and `apps/arcane/arcane.yaml`). With `/tank/apps` restored, its SQLite DB
+      brings that back.
 - [ ] Phase 7: End-to-end test
   - New docker host, install Arcane, deploy stacks, verify. Same as `dockge.md` Phase 7.
+  - Skipped for now (2026-10-07): fresh-host provisioning is untested.
 
 ## Open questions to verify early
 

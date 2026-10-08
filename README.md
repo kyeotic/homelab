@@ -13,7 +13,7 @@ A single Proxmox host manages several LXC containers and services:
 | `caddy-container`     | 192.168.0.13 | Caddy reverse proxy with wildcard TLS      |
 | `adguard-container`   | 192.168.0.17 | AdGuard Home DNS                           |
 | `tailscale-container` | 192.168.0.18 | Tailscale VPN                              |
-| `portainer`           | 192.168.0.20 | Docker host running all application stacks |
+| `docker-container`    | 192.168.0.20 | Docker host running all application stacks |
 
 Caddy handles reverse proxying for all services under `*.local.kye.dev` using DNS-01 challenge with Route53 for wildcard TLS certificates.
 
@@ -22,8 +22,7 @@ Caddy handles reverse proxying for all services under `*.local.kye.dev` using DN
 - [Just](https://github.com/casey/just) task runner
 - Ansible with `ansible-vault`
 - [vault-sync](https://github.com/kyeotic/vault-sync) for syncing Bitwarden secrets to local `.env` files
-- [stack-sync](https://github.com/kyeotic/stack-sync) for deploying Docker stacks to Portainer
-- `PORTAINER_API_KEY` environment variable set (create in Portainer under User Settings > Access Tokens)
+- [stack-sync](https://github.com/kyeotic/stack-sync) for deploying Docker stacks, configured in `~/.stack-sync.toml` (synced by vault-sync) for SSH mode with `host_dir = "/mnt/app_config/arcane/projects"`
 
 ## Commands
 
@@ -33,8 +32,8 @@ Run all commands from the repository root:
 just setup                          # Full playbook run (all plays)
 just deploy                         # List available tags
 just deploy <tag>                   # Run a specific tag
-just deploy docker-stacks           # Deploy all Portainer stacks
-just deploy docker-stacks scrypted  # Deploy a single stack
+just deploy docker-stacks           # Deploy all stacks
+just deploy docker-stacks scrypted  # Deploy one or more named stacks
 just deploy docker-stacks --check   # Dry run stack deployment
 just test <ip> [tags]               # Run against a different host IP
 just ansible-vault-edit             # Edit vault secrets in VS Code
@@ -47,7 +46,7 @@ just reset-ssh-hosts                # Clear known_hosts for all inventory IPs
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
 | `setup-proxmox`      | Initial Proxmox setup: repos, packages, ZFS pool, restic, LXC users, GPU passthrough, ZED notifications |
 | `setup-caddy`        | Create Caddy LXC container and configure reverse proxy                                                  |
-| `setup-docker`       | Create Docker LXC, install Portainer, deploy stacks, cleanup timer                                      |
+| `setup-docker`       | Create Docker LXC, install Docker, deploy stacks (including Arcane), cleanup timer                       |
 | `setup-samba`        | Create Samba LXC and configure shares                                                                   |
 | `setup-adguard`      | Create AdGuard Home LXC                                                                                 |
 | `setup-tailscale`    | Create Tailscale LXC                                                                                    |
@@ -58,7 +57,7 @@ just reset-ssh-hosts                # Clear known_hosts for all inventory IPs
 | `sync-ssh`           | Sync SSH authorized_keys to containers                                                                  |
 | `sync-samba`         | Sync Samba configuration                                                                                |
 | `sync-registry`      | Sync Docker registry configuration                                                                      |
-| `docker-stacks`      | Deploy/update Docker Compose stacks via Portainer API                                                   |
+| `docker-stacks`      | Deploy/update Docker Compose stacks with stack-sync over SSH                                            |
 
 ## Fresh Install
 
@@ -85,6 +84,10 @@ A fresh Proxmox install is configured in stages:
    ```bash
    just deploy docker-stacks
    ```
+   Arcane is one of the stacks. Its settings and login config live in
+   `/mnt/app_config/arcane/data`, so a restore brings them back; without a backup, complete
+   Arcane's first-run setup at `https://arcane.local.kye.dev` (see the comments in
+   `apps/arcane/arcane.yaml`).
 
 ## Backups
 
@@ -143,22 +146,24 @@ This syncs the file and triggers a live config reload (no container restart need
 
 ## Application Stacks
 
-Applications run as Docker Compose stacks managed through [Portainer](https://www.portainer.io/). Stack configuration is in `apps/stack-sync.toml` and compose files are in `apps/`.
+Applications run as Docker Compose stacks on the Docker host, managed in the UI with [Arcane](https://getarcane.app) at `https://arcane.local.kye.dev`. Stack configuration is in `.stack-sync.toml` and compose files are in `apps/`.
 
 ### How stacks work
 
 Stacks are deployed using [stack-sync](https://github.com/kyeotic/stack-sync), which reads `.stack-sync.toml`:
 
 ```toml
-host = "https://portainer.local.kye.dev"
-
 [stacks.scrypted]
-compose_file = "scrypted.yaml"
+compose_file = "apps/scrypted/scrypted.yaml"
+env_file = "apps/scrypted/.env"
 
-[stacks.mealie]
-compose_file = "mealie/mealie.yaml"
-env_file = "mealie/.env"
+[stacks.syncthing]
+compose_file = "apps/syncthing.yaml"
 ```
+
+Connection settings live in `~/.stack-sync.toml` (SSH mode, `host_dir = "/mnt/app_config/arcane/projects"`). For each stack, stack-sync writes `compose.yaml` and `.env` to `<host_dir>/<stack>/` on the Docker host and runs `docker compose up -d` there. Arcane watches that directory and lists every stack in it as a project, so there is nothing to import. After a deploy, reload an Arcane project page that was already open before editing in it, or the editor may save the old compose back.
+
+Removing a stack from `.stack-sync.toml` does not remove it from the host: run `docker compose down` in its project directory and delete the directory.
 
 Stacks that need environment variables have their `.env` files managed by [vault-sync](https://github.com/kyeotic/vault-sync), which syncs secrets from Bitwarden Secrets Manager. The vault-sync config is in `.vault-sync.toml`.
 
@@ -169,7 +174,7 @@ Stacks that need environment variables have their `.env` files managed by [vault
    - Create a secret in Bitwarden Secrets Manager containing the variables in `.env` format
    - Add a vault-sync entry in `.vault-sync.toml` to sync the secret to `apps/<stack>/.env`
    - Create a folder for the stack and place the compose file inside
-3. Add the stack to `apps/stack-sync.toml`
+3. Add the stack to `.stack-sync.toml`
 4. Sync secrets and deploy:
    ```bash
    vault-sync sync

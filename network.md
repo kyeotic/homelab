@@ -24,7 +24,7 @@ This document details the network design for the homelab.
 | AdGuard      | 192.168.0.17    | DNS Blocker                                  |
 | VPN          | 192.168.0.18    | Tailscale Router                             |
 | PBS          | 192.168.0.19    | Proxmox Backup Server                        |
-| Portainer    | 192.168.0.20    | Docker and Portainer                         |
+| Docker       | 192.168.0.20    | Docker host (Arcane)                         |
 | Coen's Range | 192.168.0.21-30 | Coen's IP Range for local devices            |
 | Kye-1        | 192.168.0.100   | Tims Main PC                                 |
 | KyeNAS       | 192.168.0.200   | Old Synology NAS, deprecated                 |

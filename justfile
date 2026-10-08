@@ -30,8 +30,8 @@ deploy-tf:
 #   just deploy                            - list available tags
 #   just deploy setup-proxmox              - run specific tag
 #   just deploy docker-stacks              - deploy all stacks
-#   just deploy docker-stacks scrypted     - deploy single stack
-#   just deploy docker-stacks --check      - dry run
+#   just deploy docker-stacks scrypted     - deploy one or more named stacks
+#   just deploy docker-stacks --check      - dry run (stack-sync --dry-run)
 deploy tag="" *args="":
     #!/usr/bin/env bash
     if [ -z "{{ tag }}" ]; then
@@ -39,32 +39,32 @@ deploy tag="" *args="":
         echo ""
         echo "  setup-proxmox       Initial Proxmox setup (repos, ZFS, restic, storage, users, GPU)"
         echo "  setup-caddy         Initial Caddy reverse proxy setup"
-        echo "  setup-docker        Docker host setup (cleanup timer)"
+        echo "  setup-docker        Docker host setup (Docker, Arcane dirs, stacks, cleanup timer)"
         echo "  restore-containers  Restore LXC containers from restic backup"
         echo "  sync                Sync all config files (restic, caddy, ssh)"
         echo "  sync-restic         Sync restic profile only"
         echo "  sync-caddy          Sync Caddyfile only"
         echo "  sync-ssh            Sync SSH authorized_keys to containers"
-        echo "  docker-stacks       Deploy Docker Compose stacks to Portainer"
+        echo "  docker-stacks       Deploy Docker Compose stacks (including Arcane) with stack-sync"
         echo ""
         echo "Usage: just deploy <tag>"
-        echo "       just deploy docker-stacks [stack] [--check]"
+        echo "       just deploy docker-stacks [stack...] [--check]"
     elif [ "{{ tag }}" = "docker-stacks" ]; then
-        # Special handling for docker-stacks: parse stack filter and --check
+        # Special handling for docker-stacks: parse stack names and --check
         check_flag=""
-        stack_filter=""
+        stacks=()
         for arg in {{ args }}; do
             if [ "$arg" = "--check" ]; then
                 check_flag="--check"
             else
-                stack_filter="$arg"
+                stacks+=("$arg")
             fi
         done
-        filter_arg=""
-        if [ -n "$stack_filter" ]; then
-            filter_arg="-e portainer_stack_filter=$stack_filter"
+        filter_arg=()
+        if [ ${#stacks[@]} -gt 0 ]; then
+            filter_arg=(-e "docker_stacks_filter='${stacks[*]}'")
         fi
-        {{ _ansible }} --tags docker-stacks $filter_arg $check_flag
+        {{ _ansible }} --tags docker-stacks "${filter_arg[@]}" $check_flag
     else
         {{ _ansible }} --tags "{{ tag }}" {{ args }}
     fi

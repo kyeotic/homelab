@@ -1,0 +1,63 @@
+---
+# Install Docker and prepare the directories Arcane needs.
+# Arcane itself is a compose stack deployed by the docker-stacks role.
+
+# --- Docker Installation ---
+
+- name: check if Docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_check
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: install Docker
+  when: docker_check.rc != 0
+  block:
+    - name: download Docker install script
+      ansible.builtin.get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: '0755'
+
+    - name: run Docker install script
+      ansible.builtin.command: /tmp/get-docker.sh
+      register: docker_install
+      changed_when: docker_install.rc == 0
+
+    - name: clean up Docker install script
+      ansible.builtin.file:
+        path: /tmp/get-docker.sh
+        state: absent
+
+    - name: enable and start Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+# --- Docker Configuration ---
+
+- name: configure Docker daemon
+  ansible.builtin.copy:
+    content: "{{ {'log-driver': docker_log_driver} | to_json }}"
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: restart docker
+
+- name: ensure Docker is running
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+
+# --- Arcane Directories ---
+
+# Owner is left alone: Arcane may have chowned its data dir on first start.
+- name: ensure Arcane directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ arcane_data_path }}"
+    - "{{ arcane_projects_path }}"

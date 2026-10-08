@@ -1,0 +1,6 @@
+---
+# Stack-sync config listing every stack (connection settings come from ~/.stack-sync.toml)
+docker_stacks_config: "{{ playbook_dir }}/../../.stack-sync.toml"
+
+# Space-separated stack names to sync; empty syncs every stack
+docker_stacks_filter: ""

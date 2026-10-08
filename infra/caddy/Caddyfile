@@ -103,15 +103,6 @@ homelab.kye.dev {
 	
 	import gated-arr music 192.168.0.20:8686
 	
-	@portainer host portainer.local.kye.dev
-	handle @portainer {
-		reverse_proxy https://192.168.0.20:9443 {
-			transport http {
-				tls_insecure_skip_verify
-			}
-		}
-	}
-	
 	import gated-arr prowl 192.168.0.20:9696
 	
 	@qbit host qbit.local.kye.dev
@@ -194,12 +185,6 @@ homelab.kye.dev {
 	@beszel host beszel.local.kye.dev
 	handle @beszel {
 		reverse_proxy 192.168.0.20:8190
-	}
-
-	@dockru host dockru.local.kye.dev
-	handle @dockru {
-		import tinyauth
-		reverse_proxy 192.168.0.20:5051
 	}
 
 	@arcane host arcane.local.kye.dev
