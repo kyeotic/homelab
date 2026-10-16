@@ -94,7 +94,6 @@ Things to know:
 | Calibre-Web-Automated | calibre | 🔶 Local login only | Native OIDC (or header login) |
 | Beszel | beszel | 🔶 Local password only | Native OIDC |
 | Mealie | cook (public: cook.kye.dev) | 🔶 Native OIDC, but against **Auth0** | Decision needed (see below) |
-| Jellyseerr | jellyseer | ⏳ Plex login | Wait for Seerr to ship OIDC |
 | Home Assistant | homeassistant | ⏳ Local login | Community integration only, optional |
 | SABnzbd | none | No route, no login | Optional: add a gated route |
 | Plex, Scrypted, Docker registry | plex, scrypted, docker | ⛔ Can't use either method | Keep as is |
@@ -194,9 +193,6 @@ or Tailscale would be redirected to a login page they can't reach. The options:
 
 ## Not supported yet, or only through an add-on
 
-- **Jellyseerr.** No OIDC in a stable release. Jellyseerr merged into Seerr (`seerr-team/seerr`),
-  and OIDC (PR #2715) is still only in the `preview-new-oidc` image. Logins go through Plex for now.
-  Once a Seerr release includes OIDC, switch the image to Seerr and add a Pocket ID client.
 - **Home Assistant.** No built-in OIDC. The community integration `hass-oidc-auth` (installed
   through HACS) adds a Pocket ID login. HACS is not installed (`custom_components/` is empty). A
   TinyAuth gate is not an option, because it would break the companion app and API access. Low
@@ -217,7 +213,7 @@ or Tailscale would be redirected to a login page they can't reach. The options:
   comment on `(tinyauth)` in the Caddyfile).
 
 No web UI, so nothing to do: gluetun, qbittorrent-port, qbittools, flaresolverr, unpackerr,
-recyclarr, matter-server, wyoming-whisper, wyoming-piper, beszel-agent, ffmpeg, and the game
+recyclarr, matter-server, beszel-agent, ffmpeg, and the game
 servers (not deployed).
 
 ## Suggested order
@@ -226,8 +222,7 @@ servers (not deployed).
    and code-server.
 2. Native OIDC for Beszel, Audiobookshelf and Calibre-Web-Automated.
 3. Decide what to do with Mealie.
-4. Revisit Jellyseerr when Seerr ships OIDC. Home Assistant only if the second login really bothers
-   you.
+4. Home Assistant, only if the second login really bothers you.
 5. Separately: add auth to the registry. (The raw ports are done, see "Raw ports" above.)
 
 ## Sources
@@ -235,5 +230,3 @@ servers (not deployed).
 - Pocket ID client guides (Audiobookshelf, Calibre-Web-Automated, Beszel):
   https://pocket-id.org/docs/client-examples
 - Audiobookshelf OIDC: https://audiobookshelf.org/guides/oidc_authentication
-- Seerr OIDC status: https://github.com/seerr-team/seerr/discussions/2721,
-  https://github.com/seerr-team/seerr/pull/1505

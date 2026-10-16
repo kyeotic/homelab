@@ -12,7 +12,7 @@
 }
 
 # Gated *arr app. Usage: import gated-arr <subdomain> <upstream>
-# API-key clients (Jellyseerr, mobile apps, calendar feeds) and health checks
+# API-key clients (mobile apps, calendar feeds) and health checks
 # skip the gate; the app still enforces its API key on those paths. The app runs
 # with External auth, but still serves a dead form at /login that stale
 # bookmarks land on, so that path is sent to the app root.
@@ -92,11 +92,6 @@ homelab.kye.dev {
 	@plex host plex.local.kye.dev
 	handle @plex {
 		reverse_proxy 192.168.0.20:32400
-	}
-	
-	@jellyseer host jellyseer.local.kye.dev
-	handle @jellyseer {
-		reverse_proxy 192.168.0.20:5055
 	}
 	
 	import gated-arr movies 192.168.0.20:7878
