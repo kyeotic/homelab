@@ -110,3 +110,5 @@ __pycache__/
 *.pyc
 plans/
 .claude/
+# game server configs pulled from the NAS (contain passwords)
+enshrouded_server*.json
