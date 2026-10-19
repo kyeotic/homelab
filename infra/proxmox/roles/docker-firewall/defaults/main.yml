@@ -13,6 +13,7 @@ docker_firewall_gated_ports:
   - { name: bazarr, port: 6767 }
   - { name: listenarr, port: 4545 }
   - { name: dozzle, port: 8084 }
+  - { name: sabnzbd, port: 8100 }
 
 # Interface LAN traffic arrives on
 docker_firewall_lan_interface: eth0

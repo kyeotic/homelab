@@ -104,7 +104,23 @@ homelab.kye.dev {
 	handle @qbit {
 		reverse_proxy 192.168.0.20:8200
 	}
-	
+
+	# SABnzbd enforces its API key on its API endpoints, so they skip the gate
+	# for mobile apps. Its web UI embeds that key, so nothing else may skip it.
+	@sab-api {
+		host sab.local.kye.dev
+		path /api /sabnzbd/api
+	}
+	handle @sab-api {
+		reverse_proxy 192.168.0.20:8100
+	}
+
+	@sab host sab.local.kye.dev
+	handle @sab {
+		import tinyauth
+		reverse_proxy 192.168.0.20:8100
+	}
+
 	# Bazarr enforces its API key on /api/*. Its HTML embeds that key, so no
 	# other path may skip the gate.
 	@subs-api {
