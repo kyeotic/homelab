@@ -6,6 +6,11 @@ services:
     network_mode: "host"
     # the image waits up to 30s for the server to save and exit on SIGTERM
     stop_grace_period: 45s
+    # the image starts Xvfb on :99 without clearing a stale /tmp/.X99-lock, so
+    # after a `docker restart` (e.g. the nightly ofelia job) Xvfb exits and the
+    # server hangs with no display. tmpfs wipes /tmp on every start.
+    tmpfs:
+      - /tmp:exec,mode=1777
     ports:
       - 15637:15637/udp
     volumes:

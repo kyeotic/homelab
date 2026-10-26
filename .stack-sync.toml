@@ -51,3 +51,6 @@ env_file = "apps/games/enshrouded/.env"
 [stacks.auth]
 compose_file = "apps/auth/auth.yaml"
 env_file = "apps/auth/.env"
+
+[stacks.claude]
+compose_file = "apps/claude.yaml"

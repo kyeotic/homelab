@@ -1,0 +1,62 @@
+name: claude
+services:
+  claude:
+    # Claude Code Remote Control server for the Obsidian vault (the Syncthing
+    # "Notes" folder). Drive it from claude.ai/code or the Claude app's Code tab.
+    # Outbound HTTPS only, so it needs no ports, Caddy route or firewall rule.
+    #
+    # The node image provides uid 1000 (user "node"), which matches the vault's
+    # owner and Syncthing's PUID. The claude binary is installed into the
+    # persisted home on first start and updates itself there.
+    #
+    # One-time login (Remote Control needs a full claude.ai login; setup-token
+    # and API keys are rejected):
+    #   docker exec -it claude claude auth login
+    # Then answer the one-time "Enable Remote Control? (y/n)" prompt (detach
+    # with Ctrl-P Ctrl-Q, not Ctrl-C):
+    #   docker attach claude
+    image: node:24-bookworm
+    container_name: claude
+    hostname: kye-claude
+    user: "1000:1000"
+    restart: unless-stopped
+    init: true
+    # Server mode draws a status UI and exits without a terminal.
+    tty: true
+    stdin_open: true
+    working_dir: /vault
+    environment:
+      HOME: /home/node
+      PATH: /home/node/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      TZ: America/Los_Angeles
+      CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX: vault
+      # acceptEdits: note edits go through, shell commands ask on your phone.
+      PERMISSION_MODE: acceptEdits
+    volumes:
+      # Must exist and be owned by 1000:1000 before first start.
+      - /mnt/app_config/claude:/home/node
+      - /mnt/nas/drive/Notes:/vault
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        if ! command -v claude >/dev/null; then
+          curl -fsSL https://claude.ai/install.sh | bash
+        fi
+        until claude auth status >/dev/null 2>&1; do
+          echo "Not logged in. Run: docker exec -it claude claude auth login"
+          sleep 30
+        done
+        # Accept the workspace trust prompt for /vault, which would otherwise
+        # block server mode with nobody at the terminal.
+        node -e '
+          const fs = require("fs"), f = process.env.HOME + "/.claude.json";
+          const c = JSON.parse(fs.readFileSync(f, "utf8"));
+          c.projects ??= {};
+          c.projects["/vault"] = { ...c.projects["/vault"], hasTrustDialogAccepted: true };
+          fs.writeFileSync(f, JSON.stringify(c, null, 2));
+        '
+        # If the network is down for ~10 minutes the server exits, and the
+        # restart policy brings it back.
+        exec claude remote-control --name "Obsidian vault" --spawn same-dir --permission-mode "$$PERMISSION_MODE"
