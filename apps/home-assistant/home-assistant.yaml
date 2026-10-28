@@ -35,3 +35,20 @@ services:
       - /run/dbus:/run/dbus:ro
     security_opt:
       - apparmor=unconfined
+  # MCP server (https://github.com/homeassistant-ai/ha-mcp) so Claude can
+  # control and configure HA. It has no login: the secret URL path is the
+  # credential, so the endpoint is http://192.168.0.20:8086${HA_MCP_SECRET_PATH}.
+  # The data dir must be owned by 999:999 (the image's mcpuser).
+  ha-mcp:
+    container_name: ha-mcp
+    image: ghcr.io/homeassistant-ai/ha-mcp:latest
+    command: ha-mcp-web
+    restart: unless-stopped
+    environment:
+      - HOMEASSISTANT_URL=http://192.168.0.20:8123
+      - HOMEASSISTANT_TOKEN=${HA_MCP_TOKEN:?err}
+      - MCP_SECRET_PATH=${HA_MCP_SECRET_PATH:?err}
+    volumes:
+      - /mnt/app_config/ha-mcp:/home/mcpuser/.ha-mcp
+    ports:
+      - 8086:8086
