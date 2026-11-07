@@ -9,3 +9,12 @@ services:
       # <Host Port>:<Container Port>
       - "5566:3001"
       # - "3307:3306"
+    networks:
+      - default
+      - monitoring
+
+# Shared with apps Kuma checks directly by container name (e.g. http://pigeon:8080/readyz),
+# so they need no published port or proxy route. Deploy this stack before those apps.
+networks:
+  monitoring:
+    name: monitoring
