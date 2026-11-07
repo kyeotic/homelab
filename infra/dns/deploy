@@ -5,8 +5,11 @@ _dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _root="${_dir}/../.."
 _env="${_root}/apps/mealie/.env"
 
-# Source project .env for CLOUDFLARE_API_TOKEN
-set -o allexport; source "${_root}/.env"; set +o allexport
+# CLOUDFLARE_API_TOKEN comes from the environment (~/.vault-env, sourced by dotfiles .zshrc)
+if [[ -z "${CLOUDFLARE_API_TOKEN}" ]]; then
+  echo "CLOUDFLARE_API_TOKEN not set; run 'vault-sync sync' in ~/dotfiles and open a new shell" >&2
+  exit 1
+fi
 
 # Source mealie .env for Auth0 credentials
 set -o allexport; source "${_env}"; set +o allexport
