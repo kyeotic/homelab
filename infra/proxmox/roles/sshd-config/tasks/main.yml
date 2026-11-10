@@ -1,0 +1,12 @@
+---
+# Key-only SSH on the Proxmox host and all LXCs
+
+- name: deploy sshd hardening drop-in
+  ansible.builtin.template:
+    src: 10-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    mode: '0644'
+    owner: root
+    group: root
+    validate: sshd -t -f %s
+  notify: restart sshd

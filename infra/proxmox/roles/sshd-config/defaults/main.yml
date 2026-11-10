@@ -1,0 +1,6 @@
+---
+# Key-only SSH. Proxmox web UI shells use /bin/login and lxc-console, not sshd,
+# so local password login there is unaffected.
+sshd_password_authentication: false
+# prohibit-password keeps root key login (Ansible, stack-sync, PVE cluster SSH)
+sshd_permit_root_login: prohibit-password

@@ -18,6 +18,13 @@
     - { role: tailscale-lxc, tags: [setup-tailscale] }
     - role: container-ssh
 
+# Runs after the first play so newly created LXCs get it too
+- name: Configure SSH server
+  hosts: all
+  gather_facts: false
+  roles:
+    - { role: sshd-config, tags: [sync, sync-sshd] }
+
 - name: Configure Caddy
   hosts: caddy
   gather_facts: false

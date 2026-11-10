@@ -14,7 +14,7 @@ All commands run from the repository root using Just (task runner):
 just setup                    # Full Ansible playbook run
 just deploy <tag>             # Run specific tag (run without args to list tags)
 just deploy setup-proxmox     # Initial Proxmox setup
-just deploy sync              # Sync all config files (restic, caddy, ssh)
+just deploy sync              # Sync all config files (restic, caddy, ssh, sshd)
 just deploy sync-caddy        # Sync only Caddyfile
 just test <ip> [tags]         # Test against a different host IP
 ```
@@ -41,7 +41,7 @@ infra/proxmox/
 
 All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
 
-**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-samba`, `sync-firewall`, `docker-stacks`, `fix-perms`
+**Playbook tags:** `setup-proxmox`, `setup-caddy`, `setup-docker`, `setup-samba`, `sync`, `sync-restic`, `sync-caddy`, `sync-ssh`, `sync-sshd`, `sync-samba`, `sync-firewall`, `docker-stacks`, `fix-perms`
 
 ### Roles
 
@@ -55,6 +55,7 @@ All SSH connections use `root@<ip>`, e.g. `ssh root@192.168.0.10`.
 | gpu-access       | GPU passthrough udev rules               |
 | zed-discord      | ZFS event notifications to Discord       |
 | container-ssh    | SSH key distribution                     |
+| sshd-config      | Key-only sshd (no passwords) on Proxmox and all LXCs |
 | caddy            | Caddy reverse proxy setup                |
 | docker-host      | Docker install, Arcane data/projects dirs |
 | docker-firewall  | nftables rules so only Caddy reaches TinyAuth-gated app ports |

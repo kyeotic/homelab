@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+# sshd uses the first value it reads, and sshd_config includes this directory
+# before its own settings, so these override the main file.
+PasswordAuthentication {{ 'yes' if sshd_password_authentication else 'no' }}
+# With UsePAM yes, keyboard-interactive would still allow PAM password prompts
+KbdInteractiveAuthentication no
+PermitRootLogin {{ sshd_permit_root_login }}
+PermitEmptyPasswords no

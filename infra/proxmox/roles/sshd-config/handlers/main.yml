@@ -1,0 +1,16 @@
+---
+# Handlers run in the order they're defined: check the full config first so a
+# bad merge can't take sshd down, then restart.
+# Restart, not reload: the Debian 13 LXCs use ssh.socket, and SIGHUP makes
+# sshd try to bind :22 itself, which fails because systemd owns the socket.
+# Open sessions survive a restart (they run in their own session scopes).
+- name: check sshd config
+  ansible.builtin.command: sshd -t
+  changed_when: false
+  listen: restart sshd
+
+- name: restart ssh service
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+  listen: restart sshd
