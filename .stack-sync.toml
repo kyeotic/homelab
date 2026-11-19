@@ -25,7 +25,8 @@ compose_file = "apps/ffmpeg.yaml"
 # env_file = "apps/games/core-keeper/.env"
 
 [stacks.uptime-kuma]
-compose_file = "apps/uptime-kuma.yaml"
+compose_file = "apps/uptime-kuma/uptime-kuma.yaml"
+env_file = "apps/uptime-kuma/.env"
 
 [stacks.registry]
 compose_file = "apps/registry.yaml"

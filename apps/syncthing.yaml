@@ -17,3 +17,7 @@ services:
       - 21027:21027/udp     # Receive local discovery broadcasts
     network_mode: host
     restart: unless-stopped
+    labels:
+      kuma.syncthing.http.name: "Syncthing"
+      kuma.syncthing.http.url: "http://192.168.0.20:8384/rest/noauth/health"
+      kuma.syncthing.http.notification_id_list: '{"1": true}'

@@ -3,6 +3,9 @@ services:
     image: ghcr.io/pocket-id/pocket-id:v2
     container_name: pocket-id
     restart: unless-stopped
+    labels:
+      kuma.pocket-id.http.name: "Pocket ID"
+      kuma.pocket-id.http.url: "https://auth.local.kye.dev/healthz"
     ports:
       - "1411:1411"
     volumes:

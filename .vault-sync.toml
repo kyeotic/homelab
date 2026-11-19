@@ -41,3 +41,7 @@ path = "apps/auth/.env"
 [secrets.arcane]
 id = "9c3aa08d-7ae6-4b76-9796-b4dd0012b8e0"
 path = "apps/arcane/.env"
+
+[secrets.uptime-kuma]
+id = "f491c8a7-d4a2-488c-b5ad-b507010a8180"
+path = "apps/uptime-kuma/.env"

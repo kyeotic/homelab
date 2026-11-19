@@ -13,6 +13,13 @@ default:
 
   backup:
     verbose: true
+    # Heartbeat to the "Restic backups" push monitor in Uptime Kuma (defined by the
+    # kuma.restic.* labels in apps/uptime-kuma/uptime-kuma.yaml, which has the same token).
+    # Direct to Kuma's port: kuma.local.kye.dev is behind TinyAuth.
+    send-after:
+      url: "http://192.168.0.20:5566/api/push/yhUKLl9pkDQWDvDWgPTDSZifVWLUGXRo?status=up&msg=OK"
+    send-after-fail:
+      url: "http://192.168.0.20:5566/api/push/yhUKLl9pkDQWDvDWgPTDSZifVWLUGXRo?status=down&msg=backup%20failed"
     source:
       - "/tank/nas"
       - "/tank/apps"

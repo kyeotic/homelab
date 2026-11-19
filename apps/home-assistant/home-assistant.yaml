@@ -7,6 +7,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
+    labels:
+      kuma.homeassistant.http.name: "Home Assistant"
+      kuma.homeassistant.http.url: "https://homeassistant.local.kye.dev/manifest.json"
+      kuma.homeassistant.http.notification_id_list: '{"1": true}'
     privileged: true
     network_mode: host
     ports:
@@ -29,6 +33,11 @@ services:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     container_name: matter-server
     restart: unless-stopped
+    labels:
+      kuma.matter-server.port.name: "Matter Server"
+      kuma.matter-server.port.hostname: "192.168.0.20"
+      kuma.matter-server.port.port: "5580"
+      kuma.matter-server.port.notification_id_list: '{"1": true}'
     network_mode: host
     volumes:
       - /mnt/app_config/ha-matter-server:/data

@@ -3,6 +3,9 @@ services:
     image: registry:2
     container_name: registry
     restart: unless-stopped
+    labels:
+      kuma.registry.http.name: "Docker Registry"
+      kuma.registry.http.url: "https://docker.local.kye.dev/v2/"
     ports:
       - "8500:5000"
     volumes:

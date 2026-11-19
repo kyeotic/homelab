@@ -4,6 +4,10 @@ services:
     image: ghcr.io/getarcaneapp/manager:v2
     container_name: arcane
     restart: unless-stopped
+    labels:
+      kuma.arcane.http.name: "Arcane"
+      kuma.arcane.http.url: "http://192.168.0.20:3552/api/health"
+      kuma.arcane.http.notification_id_list: '{"1": true}'
     ports:
       - 3552:3552
     volumes:

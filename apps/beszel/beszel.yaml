@@ -9,6 +9,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+    labels:
+      kuma.beszel.http.name: "Beszel"
+      kuma.beszel.http.url: "https://beszel.local.kye.dev/api/health"
 
   beszel-agent:
     image: henrygd/beszel-agent:latest

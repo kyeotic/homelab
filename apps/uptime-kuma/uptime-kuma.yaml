@@ -1,0 +1,90 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - /mnt/app_config/uptime-kuma:/app/data
+      # For "docker" monitors (container running/healthy), e.g. gluetun. The Kuma Docker host
+      # entry that uses it is the `docker-host` label on autokuma below.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # <Host Port>:<Container Port>
+      - "5566:3001"
+      # - "3307:3306"
+    networks:
+      - default
+      - monitoring
+
+  # Creates Kuma monitors from `kuma.<id>.<type>.<setting>` labels on containers on this
+  # host. It tracks the monitors it manages in its own database (/data), not with a Kuma tag.
+  # Edit those monitors through labels, not the UI, or the next sync overwrites the change.
+  # Docs: https://github.com/BigBoot/AutoKuma
+  #
+  # Alerts are opt-in. To alert through "Kyerell Alerts" (Kuma notification id 1), add
+  #   kuma.<id>.<type>.notification_id_list: '{"1": true}'
+  # (`notification_name_list` only resolves notifications AutoKuma itself created.)
+  #
+  # Labels that live in other repos:
+  #   pigeon (the pigeon repo's compose file, on its `pigeon` service):
+  #     kuma.pigeon.http.name: "Pigeon"
+  #     kuma.pigeon.http.url: "http://pigeon:8080/readyz"
+  #     kuma.pigeon.http.notification_id_list: '{"1": true}'
+  #   Until those land, the hand-made "Pigeon" monitor in Kuma covers it. Delete that one once
+  #   the AutoKuma one shows up.
+  autokuma:
+    image: ghcr.io/bigboot/autokuma:2.0.0
+    container_name: autokuma
+    restart: unless-stopped
+    environment:
+      AUTOKUMA__KUMA__URL: http://uptime-kuma:3001
+      AUTOKUMA__KUMA__USERNAME: ${KUMA_USERNAME:?err}
+      AUTOKUMA__KUMA__PASSWORD: ${KUMA_PASSWORD:?err}
+      # Default is "delete" (60s after the container disappears). A container removed by the
+      # nightly prune would then lose its monitor right when it goes down. With "keep",
+      # remove a monitor by hand in the UI after removing its labels.
+      AUTOKUMA__ON_DELETE: keep
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/app_config/autokuma:/data
+    depends_on:
+      - uptime-kuma
+    # Monitors for things that aren't containers on this host. No alerts on these.
+    labels:
+      kuma.docker-host.docker_host.name: "docker-container"
+      kuma.docker-host.docker_host.connection_type: "socket"
+      kuma.docker-host.docker_host.path: "/var/run/docker.sock"
+
+      kuma.adguard.dns.name: "AdGuard (DNS)"
+      kuma.adguard.dns.hostname: "cloudflare.com"
+      kuma.adguard.dns.dns_resolve_server: "192.168.0.17"
+      kuma.adguard.dns.dns_resolve_type: "A"
+      kuma.adguard.dns.port: "53"
+
+      kuma.caddy.port.name: "Caddy"
+      kuma.caddy.port.hostname: "192.168.0.13"
+      kuma.caddy.port.port: "443"
+
+      kuma.samba.port.name: "Samba (kye-nas)"
+      kuma.samba.port.hostname: "192.168.0.11"
+      kuma.samba.port.port: "445"
+
+      # The Tailscale LXC. Ping only shows the container is up, not that tailscaled is.
+      kuma.tailscale.ping.name: "Tailscale"
+      kuma.tailscale.ping.hostname: "192.168.0.18"
+
+      kuma.proxmox.http.name: "Proxmox UI"
+      kuma.proxmox.http.url: "https://homelab.kye.dev/"
+
+      # Pushed by resticprofile on the Proxmox host after each backup (send-after /
+      # send-after-fail in infra/restic/profiles.yaml, which has the same token). A backup
+      # runs every day at 04:00, so 26h without a push means one was missed.
+      kuma.restic.push.name: "Restic backups"
+      kuma.restic.push.push_token: "yhUKLl9pkDQWDvDWgPTDSZifVWLUGXRo"
+      kuma.restic.push.interval: "93600"
+
+# Shared with apps Kuma checks directly by container name (e.g. http://pigeon:8080/readyz),
+# so they need no published port or proxy route. Deploy this stack before those apps.
+networks:
+  monitoring:
+    name: monitoring

@@ -23,6 +23,11 @@ services:
     image: qmcgaw/gluetun:v3.39
     container_name: gluetun
     restart: always
+    labels:
+      kuma.gluetun.docker.name: "Gluetun (VPN)"
+      kuma.gluetun.docker.docker_container: "gluetun"
+      kuma.gluetun.docker.docker_host_name: "docker-host"
+      kuma.gluetun.docker.notification_id_list: '{"1": true}'
     cap_add:
       - NET_ADMIN
     devices:
@@ -110,6 +115,10 @@ services:
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
     restart: unless-stopped
+    labels:
+      kuma.plex.http.name: "Plex"
+      kuma.plex.http.url: "https://plex.local.kye.dev/identity"
+      kuma.plex.http.notification_id_list: '{"1": true}'
 
 ###########################################################################
 ##  Docker Compose File:  qBittorrent (LinuxServer.io)
@@ -295,6 +304,9 @@ services:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
     restart: unless-stopped
+    labels:
+      kuma.lidarr.http.name: "Lidarr"
+      kuma.lidarr.http.url: "https://music.local.kye.dev/ping"
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/lidarr:/config
       - ${FOLDER_FOR_MEDIA:?err}:/data
@@ -318,6 +330,9 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     restart: unless-stopped
+    labels:
+      kuma.prowlarr.http.name: "Prowlarr"
+      kuma.prowlarr.http.url: "https://prowl.local.kye.dev/ping"
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/prowlarr:/config
     ports:
@@ -340,6 +355,9 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     restart: unless-stopped
+    labels:
+      kuma.radarr.http.name: "Radarr"
+      kuma.radarr.http.url: "https://movies.local.kye.dev/ping"
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/radarr:/config
       - ${FOLDER_FOR_MEDIA:?err}:/data
@@ -363,6 +381,9 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     restart: unless-stopped
+    labels:
+      kuma.sonarr.http.name: "Sonarr"
+      kuma.sonarr.http.url: "https://tv.local.kye.dev/ping"
     volumes:
       - ${FOLDER_FOR_CONFIGS:?err}/sonarr:/config
       - ${FOLDER_FOR_MEDIA:?err}:/data
@@ -405,6 +426,9 @@ services:
     image: lscr.io/linuxserver/readarr:0.4.18-develop
     container_name: readarr
     restart: unless-stopped
+    labels:
+      kuma.readarr.http.name: "Readarr"
+      kuma.readarr.http.url: "https://reader.local.kye.dev/ping"
     depends_on:
       - calibre
     volumes:
@@ -505,6 +529,12 @@ services:
     environment:
       - TZ=${TIMEZONE:?err}
     restart: unless-stopped
+    labels:
+      # Uptime Kuma monitor, created by AutoKuma (apps/uptime-kuma). Goes through Caddy,
+      # the same path the mobile app uses.
+      kuma.audiobookshelf.http.name: "Audiobookshelf"
+      kuma.audiobookshelf.http.url: "https://audiobooks.local.kye.dev/status"
+      kuma.audiobookshelf.http.notification_id_list: '{"1": true}'
 
 ###########################################################################
 ##  Docker Compose File:  Unpackerr (Hotio.Dev)

@@ -4,6 +4,9 @@ services:
     image: amir20/dozzle:latest
     container_name: dozzle
     restart: unless-stopped
+    labels:
+      kuma.dozzle.http.name: "Dozzle"
+      kuma.dozzle.http.url: "http://192.168.0.20:8084/healthcheck"
     environment:
       # Identity comes from TinyAuth via Caddy's forward_auth (Remote-User,
       # Remote-Email, Remote-Name). Must stay paired with `import tinyauth`

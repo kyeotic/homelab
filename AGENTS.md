@@ -78,6 +78,14 @@ To add a new stack:
    }
    ```
 5. If the route uses `import tinyauth` and the app's own login is turned off, add its host port to `docker_firewall_gated_ports` in `infra/proxmox/roles/docker-firewall/defaults/main.yml` and run `just deploy sync-firewall`. Otherwise the app is open with no login on `192.168.0.20:<host-port>`. See `sso.md`.
+6. To monitor it in Uptime Kuma, add AutoKuma labels to the service (AutoKuma runs in the `uptime-kuma` stack). Alerts are opt-in: add the `notification_id_list` line only for services that should notify "Kyerell Alerts".
+   ```yaml
+   labels:
+     kuma.<name>.http.name: "<Display Name>"
+     kuma.<name>.http.url: "https://<name>.local.kye.dev/<health-path>"
+     kuma.<name>.http.notification_id_list: '{"1": true}'   # optional: alert
+   ```
+   Monitors for things that aren't containers on the docker host (LXCs, Proxmox, backups) are labels on the `autokuma` service. AutoKuma keeps a monitor when its container or labels disappear (`ON_DELETE=keep`), so delete retired monitors in the Kuma UI. Adding a monitor to the "Homelab" status page is a manual step in the UI.
 
 ### Other Directories
 

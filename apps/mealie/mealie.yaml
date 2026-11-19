@@ -3,6 +3,10 @@ services:
     image: ghcr.io/mealie-recipes/mealie:v3.10.2
     container_name: mealie
     restart: always
+    labels:
+      kuma.mealie.http.name: "Mealie"
+      kuma.mealie.http.url: "https://cook.local.kye.dev/api/app/about"
+      kuma.mealie.http.notification_id_list: '{"1": true}'
     ports:
       - "3100:9000"
     deploy:

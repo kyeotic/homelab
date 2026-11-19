@@ -47,6 +47,9 @@ services:
             #     max-file: "10"
         labels:
             - "com.centurylinklabs.watchtower.scope=scrypted"
+            - "kuma.scrypted.http.name=Scrypted"
+            - "kuma.scrypted.http.url=https://scrypted.local.kye.dev/"
+            - 'kuma.scrypted.http.notification_id_list={"1": true}'
 
         # Use global DNS servers to avoid issues with some local DNS servers.
         # particularly with npm registry, etc.
