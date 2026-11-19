@@ -504,6 +504,7 @@ services:
       - ${FOLDER_FOR_MEDIA:?err}/media/reading/abs-metadata:/metadata
     environment:
       - TZ=${TIMEZONE:?err}
+    restart: unless-stopped
 
 ###########################################################################
 ##  Docker Compose File:  Unpackerr (Hotio.Dev)
