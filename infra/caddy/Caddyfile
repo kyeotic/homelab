@@ -193,12 +193,16 @@ homelab.kye.dev {
 		reverse_proxy 192.168.0.20:5566
 	}
 
-	# Pulls are anonymous; pushes and deletes need the `push` login (hash from the Ansible vault).
-	# The /v2/ ping asks for it too: docker only sends credentials it was challenged for there,
-	# and pulls still work after a 401 ping. Port 8500 is gated to Caddy (docker-firewall).
+	# Pulls are anonymous. Pushes and deletes to the repos listed in @registry-write need the `push`
+	# login (hash from the Ansible vault); other repos push without one. The /v2/ ping asks for it
+	# too: docker only sends credentials it was challenged for there, and pulls and pushes without a
+	# login still work after a 401 ping. Port 8500 is gated to Caddy (docker-firewall).
 	@registry host docker.local.kye.dev
 	handle @registry {
-		@registry-write not method GET HEAD
+		@registry-write {
+			path /v2/pigeon/*
+			not method GET HEAD
+		}
 		basic_auth @registry-write {
 			push {$REGISTRY_PUSH_HASH}
 		}

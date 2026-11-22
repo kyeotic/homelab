@@ -9,7 +9,7 @@ ansible-vault-edit:
     EDITOR='code --wait'  ansible-vault edit infra/proxmox/group_vars/all/vault.yml --vault-password-file .ansible-vault
 
 # Pulls need no login. The password comes from the vault and is never printed.
-# Log this machine's docker in to docker.local.kye.dev so it can push images (once per machine)
+# Log this machine's docker in to docker.local.kye.dev so it can push pigeon (once per machine)
 registry-login:
     #!/usr/bin/env bash
     set -euo pipefail
