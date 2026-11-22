@@ -1,33 +1,22 @@
 #!/bin/bash
 
-# Readarr Custom Script for "On Import"
-# Readarr passes environment variables for different events
-# For "On Import" event, these variables are available:
-# - readarr_eventtype (should be "Download" for imports)
-# - readarr_author_id
-# - readarr_author_name
-# - readarr_author_path
-# - readarr_book_id
-# - readarr_book_title
-# - readarr_book_releasedate
-# - readarr_bookfile_id
-# - readarr_bookfile_path (the imported file path)
-# - readarr_bookfile_quality
-# - readarr_bookfile_qualityversion
-# - readarr_bookfile_releasegroup
-# - readarr_bookfile_scenename
-# - readarr_download_client
-# - readarr_download_id
+# Readarr Custom Script: copy imported ebooks into Calibre-Web-Automated's ingest folder.
+#
+# Deployed on the docker host as /mnt/app_config/readarr/books-ingest (Readarr sees it as
+# /config/books-ingest). Readarr > Settings > Connect > "calibre-ingest", with
+# "On Release Import" and "On Upgrade" enabled.
+#
+# Readarr passes the imported files in readarr_addedbookpaths (absolute paths separated
+# by "|"). Those paths are used as-is: rebuilding the folder from the book title breaks
+# whenever Readarr's folder naming differs from the title (e.g. ":" becomes " -").
 
 # ===== CONFIGURATION =====
-# Destination directory (change this to your desired path)
+# CWA's ingest folder. CWA deletes files from it after processing, so files are copied.
 DESTINATION="/data/books-ingest"
 
-# File extensions to copy (space-separated, without dots)
-# Removed to test: "docx" "html" "htmlz"
+# File extensions to copy (without dots). Audio files are never copied.
 EXTENSIONS=("epub" "azw" "mobi" "pdf" "azw3" "azw4" "cbz" "cbr" "cb7" "lit" "odt" "pdb" "rtf")
 
-# Log file
 LOG_FILE="/tmp/readarr-copy.log"
 
 # ===== SCRIPT LOGIC =====
@@ -35,107 +24,65 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE" 2>&1
 }
 
-# Log that script was called
+# Readarr lowercases variable names on Linux; accept the documented casing too.
+event_type="${readarr_eventtype:-$Readarr_EventType}"
+book_title="${readarr_book_title:-$Readarr_Book_Title}"
+added_paths="${readarr_addedbookpaths:-$Readarr_AddedBookPaths}"
+
 log_message "========================================="
-log_message "Script executed"
-log_message "Event Type: ${readarr_eventtype}"
-log_message "Author: ${readarr_author_name}"
-log_message "Book: ${readarr_book_title}"
-log_message "Author Path: ${readarr_author_path}"
+log_message "Event Type: ${event_type}"
+log_message "Book: ${book_title}"
 
-# Create destination directory if it doesn't exist
-mkdir -p "$DESTINATION" 2>&1 | while read line; do log_message "mkdir: $line"; done
-
-# Skip non-Download events
-if [ "$readarr_eventtype" = "Test" ]; then
+if [ "$event_type" = "Test" ]; then
+    mkdir -p "$DESTINATION"
     log_message "Test event - script is working!"
     exit 0
 fi
 
-if [ "$readarr_eventtype" != "Download" ]; then
-    log_message "Not a Download event (was: ${readarr_eventtype}), skipping"
+if [ "$event_type" != "Download" ]; then
+    log_message "Not a Download event, skipping"
     exit 0
 fi
 
-# Verify we have the required variables
-if [ -z "$readarr_author_path" ]; then
-    log_message "ERROR: readarr_author_path is empty"
+if [ -z "$added_paths" ]; then
+    log_message "ERROR: readarr_addedbookpaths is empty"
     exit 1
 fi
 
-if [ -z "$readarr_book_title" ]; then
-    log_message "ERROR: readarr_book_title is empty"
-    exit 1
-fi
+mkdir -p "$DESTINATION"
 
-# Check if author path exists
-if [ ! -d "$readarr_author_path" ]; then
-    log_message "ERROR: Author path does not exist: $readarr_author_path"
-    exit 1
-fi
+is_ebook() {
+    local ext="${1##*.}"
+    ext="${ext,,}"
+    local e
+    for e in "${EXTENSIONS[@]}"; do
+        [ "$ext" = "$e" ] && return 0
+    done
+    return 1
+}
 
-# Look for the book folder (try exact match first, then fuzzy)
-BOOK_FOLDER=""
-
-# Try exact match with book title
-if [ -d "$readarr_author_path/$readarr_book_title" ]; then
-    BOOK_FOLDER="$readarr_author_path/$readarr_book_title"
-    log_message "Found book folder (exact match): $BOOK_FOLDER"
-else
-    # Try case-insensitive search
-    log_message "Exact folder not found, searching for book folder..."
-    BOOK_FOLDER=$(find "$readarr_author_path" -maxdepth 1 -type d -iname "*${readarr_book_title}*" | head -n 1)
-    
-    if [ -n "$BOOK_FOLDER" ]; then
-        log_message "Found book folder (fuzzy match): $BOOK_FOLDER"
-    else
-        log_message "ERROR: Could not find book folder for: $readarr_book_title"
-        log_message "Searched in: $readarr_author_path"
-        log_message "Available folders:"
-        ls -1 "$readarr_author_path" >> "$LOG_FILE" 2>&1
-        exit 1
+copied=0
+failed=0
+IFS='|' read -ra paths <<< "$added_paths"
+for file in "${paths[@]}"; do
+    [ -z "$file" ] && continue
+    if ! is_ebook "$file"; then
+        log_message "Skipping non-ebook file: $file"
+        continue
     fi
-fi
-
-# Build find command for extensions
-FIND_PARAMS=()
-for i in "${!EXTENSIONS[@]}"; do
-    if [ $i -eq 0 ]; then
-        FIND_PARAMS+=("-iname" "*.${EXTENSIONS[$i]}")
+    if [ ! -f "$file" ]; then
+        log_message "ERROR: File not found: $file"
+        ((failed++))
+        continue
+    fi
+    if cp "$file" "$DESTINATION/" >> "$LOG_FILE" 2>&1; then
+        log_message "SUCCESS: Copied $(basename "$file")"
+        ((copied++))
     else
-        FIND_PARAMS+=("-o" "-iname" "*.${EXTENSIONS[$i]}")
+        log_message "ERROR: Failed to copy $file"
+        ((failed++))
     fi
 done
 
-# Find and copy all matching files in the book folder
-log_message "Searching for files with extensions: ${EXTENSIONS[*]}"
-copied_count=0
-found_files=0
-
-while IFS= read -r -d '' file; do
-    ((found_files++))
-    filename=$(basename "$file")
-    log_message "Found file: $filename"
-    
-    # Copy the file
-    cp -v "$file" "$DESTINATION/" >> "$LOG_FILE" 2>&1
-    
-    if [ $? -eq 0 ]; then
-        log_message "SUCCESS: Copied $filename"
-        ((copied_count++))
-    else
-        log_message "ERROR: Failed to copy $filename"
-    fi
-done < <(find "$BOOK_FOLDER" -type f \( "${FIND_PARAMS[@]}" \) -print0)
-
-if [ $found_files -eq 0 ]; then
-    log_message "WARNING: No files found with extensions: ${EXTENSIONS[*]}"
-    log_message "Files in book folder:"
-    ls -lah "$BOOK_FOLDER" >> "$LOG_FILE" 2>&1
-else
-    log_message "Found $found_files file(s), successfully copied $copied_count"
-fi
-
-log_message "Processing complete"
-log_message "========================================="
-exit 0
+log_message "Copied $copied file(s), $failed failure(s)"
+[ "$failed" -eq 0 ]

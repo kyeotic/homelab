@@ -421,6 +421,11 @@ services:
 ##  Docker Compose File:  Readarr (LinuxServer.io)
 ##  Function:             eBooks Library Manager
 ##  Documentation:        https://docs.linuxserver.io/images/docker-readarr
+##  Notes:                eBooks only (root folder media/reading/books, "eBook"
+##                        profile). Audiobooks belong to Listenarr in
+##                        media/reading/audiobooks: Readarr keeps one file per
+##                        book, so an epub import deletes a linked m4b. Imports
+##                        reach Calibre via readarr-calibre.sh (Connect > Custom Script).
 ###########################################################################
   readarr:
     image: lscr.io/linuxserver/readarr:0.4.18-develop
