@@ -9,11 +9,12 @@
     mode: '0755'
 
 - name: sync compose.yaml
-  tags: [setup-caddy]
+  tags: [setup-caddy, sync, sync-caddy]
   ansible.builtin.copy:
     src: ../../../caddy/compose.yaml
     dest: /root/caddy/compose.yaml
     mode: '0644'
+  register: caddy_compose_sync
 
 - name: create env file with secrets
   tags: [setup-caddy, sync, sync-caddy]
@@ -45,4 +46,4 @@
   ansible.builtin.command:
     cmd: docker compose up -d --force-recreate
     chdir: /root/caddy
-  when: caddyfile_sync.changed or caddy_env_sync.changed
+  when: caddyfile_sync.changed or caddy_env_sync.changed or caddy_compose_sync.changed
