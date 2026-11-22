@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     labels:
       kuma.registry.http.name: "Docker Registry"
-      kuma.registry.http.url: "https://docker.local.kye.dev/v2/"
+      kuma.registry.http.url: "https://docker.local.kye.dev/v2/_catalog" # /v2/ asks for the push login
     ports:
       - "8500:5000"
     volumes:

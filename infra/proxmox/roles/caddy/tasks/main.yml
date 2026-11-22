@@ -20,6 +20,7 @@
   ansible.builtin.copy:
     content: |
       CF_API_TOKEN={{ cloudflare_api_token }}
+      REGISTRY_PUSH_HASH='{{ registry_push_hash }}'
     dest: /root/caddy/.env
     mode: '0600'
   register: caddy_env_sync

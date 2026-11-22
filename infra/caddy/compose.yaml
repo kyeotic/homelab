@@ -12,6 +12,7 @@ services:
       - /mnt/caddy:/data/caddy
     environment:
       - CF_API_TOKEN=${CF_API_TOKEN}
+      - REGISTRY_PUSH_HASH=${REGISTRY_PUSH_HASH}
     logging:
       driver: 'json-file'
       options:
