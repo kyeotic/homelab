@@ -8,6 +8,16 @@ setup:
 ansible-vault-edit:
     EDITOR='code --wait'  ansible-vault edit infra/proxmox/group_vars/all/vault.yml --vault-password-file .ansible-vault
 
+# Pulls need no login. The password comes from the vault and is never printed.
+# Log this machine's docker in to docker.local.kye.dev so it can push images (once per machine)
+registry-login:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    password="$(ansible-vault view infra/proxmox/group_vars/all/vault.yml --vault-password-file .ansible-vault \
+      | sed -n 's/^registry_push_password: "\(.*\)"$/\1/p')"
+    [[ -n "$password" ]] || { echo "registry_push_password isn't in the vault (git pull?)" >&2; exit 1; }
+    printf '%s' "$password" | docker login -u push --password-stdin docker.local.kye.dev
+
 # Clear SSH known_hosts entries for all inventory hosts (use before reinstalling systems)
 reset-ssh-hosts:
     ssh-keygen -f ~/.ssh/known_hosts -R 192.168.0.10
