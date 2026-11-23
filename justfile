@@ -9,7 +9,7 @@ ansible-vault-edit:
     EDITOR='code --wait'  ansible-vault edit infra/proxmox/group_vars/all/vault.yml --vault-password-file .ansible-vault
 
 # Pulls need no login. The password comes from the vault and is never printed.
-# Log this machine's docker in to docker.local.kye.dev so it can push pigeon (once per machine)
+# Log this machine's docker in to docker.local.kye.dev so it can push images (once per machine)
 registry-login:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -17,6 +17,24 @@ registry-login:
       | sed -n 's/^registry_push_password: "\(.*\)"$/\1/p')"
     [[ -n "$password" ]] || { echo "registry_push_password isn't in the vault (git pull?)" >&2; exit 1; }
     printf '%s' "$password" | docker login -u push --password-stdin docker.local.kye.dev
+
+# For a leaked password: a new one in the vault, Caddy reloaded, this machine logged in again.
+# Every other machine that pushes then needs `just registry-login`. Commit and push the vault.
+# Replace the registry push password (old one stops working at once)
+registry-rotate:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    umask 077
+    vault=infra/proxmox/group_vars/all/vault.yml
+    tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+    password="$(python3 -I -c 'import secrets; print(secrets.token_urlsafe(32))')"
+    hash="$(docker run --rm -e P="$password" ghcr.io/caddybuilds/caddy-cloudflare:latest sh -c 'caddy hash-password --plaintext "$P"')"
+    ansible-vault view "$vault" --vault-password-file .ansible-vault > "$tmp/v.yml"
+    P="$password" H="$hash" python3 -I -c 'import os, re, sys; p = sys.argv[1]; s = open(p).read(); s = re.sub(r"(?m)^registry_push_password: .*$", "registry_push_password: \"%s\"" % os.environ["P"], s); s = re.sub(r"(?m)^registry_push_hash: .*$", "registry_push_hash: \"%s\"" % os.environ["H"], s); open(p, "w").write(s)' "$tmp/v.yml"
+    ansible-vault encrypt "$tmp/v.yml" --vault-password-file .ansible-vault --output "$vault" >/dev/null
+    just deploy sync-caddy
+    just registry-login
+    echo "Rotated. Commit and push $vault, then run just registry-login on every other machine that pushes."
 
 # Clear SSH known_hosts entries for all inventory hosts (use before reinstalling systems)
 reset-ssh-hosts:

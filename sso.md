@@ -204,11 +204,10 @@ or Tailscale would be redirected to a login page they can't reach. The options:
 - **Scrypted.** Has its own login and no OIDC. Its HomeKit, Home Assistant and mobile clients
   couldn't get through a TinyAuth gate either.
 - **Docker registry** (`apps/registry.yaml`). The docker CLI can only use basic auth or token auth,
-  so neither OIDC nor a forward-auth gate works. Pushes and deletes to `pigeon` (it runs with mail
-  credentials) need a basic-auth login in Caddy instead (user `push`, `registry_push_password` in
-  the Ansible vault; `just registry-login` once per machine that pushes it). Other repos and all
-  pulls stay anonymous. Port 8500 is gated to Caddy by `docker-firewall`, so nothing goes around
-  the login. To protect another repo, add its path to `@registry-write` in the Caddyfile.
+  so neither OIDC nor a forward-auth gate works. Pushes and deletes need a basic-auth login in
+  Caddy instead (user `push`, `registry_push_password` in the Ansible vault; `just registry-login`
+  once per machine that pushes, `just registry-rotate` if the password leaks). Pulls stay
+  anonymous. Port 8500 is gated to Caddy by `docker-firewall`, so nothing goes around the login.
 - **SABnzbd.** No OIDC and no Caddy route, and it has no login set today. If you want a hostname for
   it, add a gated route with `/api` skipping the gate, as `gated-arr` does.
 - **Pocket ID and TinyAuth.** These are the login services themselves. Never gate them (see the
