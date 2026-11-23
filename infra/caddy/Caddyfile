@@ -194,7 +194,7 @@ homelab.kye.dev {
 	}
 
 	# Pulls are anonymous; pushes and deletes need the `push` login (hash from the Ansible vault,
-	# `just registry-login` per machine, `just registry-rotate` if it leaks). The /v2/ ping asks for
+	# password in ~/.registry-push via vault-sync, `just registry-rotate` if it leaks). The /v2/ ping asks for
 	# it too: docker only sends credentials it was challenged for there, and pulls still work after
 	# a 401 ping. Port 8500 is gated to Caddy (docker-firewall).
 	@registry host docker.local.kye.dev

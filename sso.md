@@ -205,8 +205,8 @@ or Tailscale would be redirected to a login page they can't reach. The options:
   couldn't get through a TinyAuth gate either.
 - **Docker registry** (`apps/registry.yaml`). The docker CLI can only use basic auth or token auth,
   so neither OIDC nor a forward-auth gate works. Pushes and deletes need a basic-auth login in
-  Caddy instead (user `push`, `registry_push_password` in the Ansible vault; `just registry-login`
-  once per machine that pushes, `just registry-rotate` if the password leaks). Pulls stay
+  Caddy instead (user `push`; the password is in Bitwarden, synced by vault-sync to
+  `~/.registry-push`, and push recipes log in from it; `just registry-rotate` if it leaks). Pulls stay
   anonymous. Port 8500 is gated to Caddy by `docker-firewall`, so nothing goes around the login.
 - **SABnzbd.** No OIDC and no Caddy route, and it has no login set today. If you want a hostname for
   it, add a gated route with `/api` skipping the gate, as `gated-arr` does.

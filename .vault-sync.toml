@@ -45,3 +45,9 @@ path = "apps/arcane/.env"
 [secrets.uptime-kuma]
 id = "f491c8a7-d4a2-488c-b5ad-b507010a8180"
 path = "apps/uptime-kuma/.env"
+
+# The docker.local.kye.dev push password (user `push`), read by `just registry-login` and by
+# the push recipes in pigeon, snow-tracker and lit-reader. `just registry-rotate` pushes a new one.
+[secrets.registry-push]
+id = "757ad3b4-611c-44e4-b6ad-b50b002a2337"
+path = "{{ env.HOME }}/.registry-push"
