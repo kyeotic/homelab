@@ -20,7 +20,7 @@ volumes:
 ###########################################################################
 services:
   gluetun:
-    image: qmcgaw/gluetun:v3.39
+    image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun
     restart: always
     labels:
@@ -74,7 +74,7 @@ services:
       # - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       # - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       # - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
-      - DOT_CACHING=off
+      - DNS_CACHING=off
       # HTTPPROXY and SHADOWSOCKS disabled to reduce memory usage.
       # No containers use these proxies - VPN traffic goes through network_mode: "service:gluetun" instead.
       # Previous values: HTTPPROXY=on, SHADOWSOCKS=on
